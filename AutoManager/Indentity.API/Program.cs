@@ -1,53 +1,127 @@
+using Identity.API.Services;
+using Indentity.API.Data;
+using Indentity.API.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
-namespace Indentity.API
+var builder = WebApplication.CreateBuilder(args);
+
+// =========================================================================
+// 1. REGISTO DOS CONTROLLERS (Essencial para o Swagger encontrar os endpoints!)
+// =========================================================================
+builder.Services.AddControllers();
+
+// =========================================================================
+// 2. CONFIGURAÇÃO DA BASE DE DADOS (EF Core)
+// =========================================================================
+builder.Services.AddDbContext<AutoManagerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// =========================================================================
+// 3. ASP.NET CORE IDENTITY & REQUISITO RF3 (Password Strong)
+// =========================================================================
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    public class Program
+    // RF3: Mínimo 8 caracteres, números e símbolos[cite: 1]
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<AutoManagerDbContext>()
+.AddDefaultTokenProviders();
+
+// =========================================================================
+// 4. INJEÇÃO DE DEPENDÊNCIAS DOS TEUS SERVIÇOS
+// =========================================================================
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// =========================================================================
+// 5. CONFIGURAÇÃO DO JWT BEARER (AUTENTICAÇÃO)
+// =========================================================================
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["Secret"]
+    ?? throw new InvalidOperationException("A chave 'Secret' do JWT não está definida no appsettings.json.");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        public static void Main(string[] args)
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// =========================================================================
+// 6. CONFIGURAÇÃO DO SWAGGER
+// =========================================================================
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Identity.API", Version = "v1" });
+
+    // Permite introduzir o Token JWT para testar rotas protegidas
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Insira o token JWT neste formato: Bearer {seu_token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
-            builder.Services.AddAuthorization();
-
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            new OpenApiSecurityScheme
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-            var summaries = new[]
-            {
-                "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-            };
-
-            app.MapGet("/weatherforecast", (HttpContext httpContext) =>
-            {
-                var forecast = Enumerable.Range(1, 5).Select(index =>
-                    new WeatherForecast
-                    {
-                        Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                        TemperatureC = Random.Shared.Next(-20, 55),
-                        Summary = summaries[Random.Shared.Next(summaries.Length)]
-                    })
-                    .ToArray();
-                return forecast;
-            })
-            .WithName("GetWeatherForecast")
-            .WithOpenApi();
-
-            app.Run();
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
-    }
+    });
+});
+
+var app = builder.Build();
+
+// =========================================================================
+// 7. PIPELINE DE MIDDLEWARES HTTP
+// =========================================================================
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+
+// A ordem destes middlewares é obrigatória:
+app.UseAuthentication(); // 1º Valida o Token
+app.UseAuthorization();  // 2º Valida permissões/roles
+
+// Mapeia os endpoints dos Controllers (necessário para os endpoints aparecerem no Swagger)
+app.MapControllers();
+
+app.Run();
