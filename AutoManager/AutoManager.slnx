@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="Indentity.API/Indentity.API.csproj" />
+  <Project Path="Indentity.API/Identity.API.csproj" />
   <Project Path="PartsCatalog.API/PartsCatalog.API.csproj" />
   <Project Path="WorkShop.API/WorkShop.API.csproj" />
 </Solution>
