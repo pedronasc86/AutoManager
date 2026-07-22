@@ -1,6 +1,8 @@
 using WorkShop.API.Extensions;
 using WorkShop.API.HealthChecks;
 using WorkShop.API.Services.Auth;
+using Microsoft.EntityFrameworkCore;
+using WorkShop.API.Data;
 
 namespace WorkShop.API
 {
@@ -10,28 +12,32 @@ namespace WorkShop.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // 1. Configurar DbContext com fallback de segurança para a Migration
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                ?? "Server=(localdb)\\mssqllocaldb;Database=AutoManager_WorkshopDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+
+            builder.Services.AddDbContext<WorkshopContext>(options =>
+                options.UseSqlServer(connectionString));
+
+            // 2. Controladores e Swagger
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // 3. Serviços do Projeto
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<IUserContextService, UserContextService>();
             builder.Services.AddCustomAuthentication(builder.Configuration);
             builder.Services.AddCatalogHttpClient(builder.Configuration);
 
+            builder.Services.AddAuthorization();
+
             builder.Services.AddHealthChecks()
                 .AddCheck<PartsCatalogHealthCheck>("parts_catalog_health_check");
 
-            // Add services to the container.
-            builder.Services.AddAuthorization();
-
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // 4. Pipeline de Pedidos (HTTP Pipeline)
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -41,29 +47,9 @@ namespace WorkShop.API
             app.UseCustomMiddlewares();
 
             app.UseHttpsRedirection();
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
-
-            //var summaries = new[]
-            //{
-            //    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-            //};
-
-            //app.MapGet("/weatherforecast", (HttpContext httpContext) =>
-            //{
-            //    var forecast = Enumerable.Range(1, 5).Select(index =>
-            //        new WeatherForecast
-            //        {
-            //            Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            //            TemperatureC = Random.Shared.Next(-20, 55),
-            //            Summary = summaries[Random.Shared.Next(summaries.Length)]
-            //        })
-            //        .ToArray();
-            //    return forecast;
-            //})
-            //.WithName("GetWeatherForecast")
-            //.WithOpenApi();
 
             app.MapControllers();
             app.MapHealthChecks("/health");
