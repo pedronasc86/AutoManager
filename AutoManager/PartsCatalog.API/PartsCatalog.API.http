@@ -1,6 +1,11 @@
-@PartsCatalog.API_HostAddress = http://localhost:5035
+@PartsCatalog.API_HostAddress = http://localhost:5039
 
-GET {{PartsCatalog.API_HostAddress}}/weatherforecast/
+GET {{PartsCatalog.API_HostAddress}}/todos/
+Accept: application/json
+
+###
+
+GET {{PartsCatalog.API_HostAddress}}/todos/1
 Accept: application/json
 
 ###
