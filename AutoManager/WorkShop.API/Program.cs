@@ -1,3 +1,6 @@
+using WorkShop.API.Extensions;
+using WorkShop.API.HealthChecks;
+using WorkShop.API.Services.Auth;
 
 namespace WorkShop.API
 {
@@ -6,6 +9,18 @@ namespace WorkShop.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<IUserContextService, UserContextService>();
+            builder.Services.AddCustomAuthentication(builder.Configuration);
+            builder.Services.AddCatalogHttpClient(builder.Configuration);
+
+            builder.Services.AddHealthChecks()
+                .AddCheck<PartsCatalogHealthCheck>("parts_catalog_health_check");
 
             // Add services to the container.
             builder.Services.AddAuthorization();
@@ -23,29 +38,35 @@ namespace WorkShop.API
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            app.UseCustomMiddlewares();
 
+            app.UseHttpsRedirection();
+            
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            var summaries = new[]
-            {
-                "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-            };
+            //var summaries = new[]
+            //{
+            //    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+            //};
 
-            app.MapGet("/weatherforecast", (HttpContext httpContext) =>
-            {
-                var forecast = Enumerable.Range(1, 5).Select(index =>
-                    new WeatherForecast
-                    {
-                        Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                        TemperatureC = Random.Shared.Next(-20, 55),
-                        Summary = summaries[Random.Shared.Next(summaries.Length)]
-                    })
-                    .ToArray();
-                return forecast;
-            })
-            .WithName("GetWeatherForecast")
-            .WithOpenApi();
+            //app.MapGet("/weatherforecast", (HttpContext httpContext) =>
+            //{
+            //    var forecast = Enumerable.Range(1, 5).Select(index =>
+            //        new WeatherForecast
+            //        {
+            //            Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            //            TemperatureC = Random.Shared.Next(-20, 55),
+            //            Summary = summaries[Random.Shared.Next(summaries.Length)]
+            //        })
+            //        .ToArray();
+            //    return forecast;
+            //})
+            //.WithName("GetWeatherForecast")
+            //.WithOpenApi();
+
+            app.MapControllers();
+            app.MapHealthChecks("/health");
 
             app.Run();
         }
