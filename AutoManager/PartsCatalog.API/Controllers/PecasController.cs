@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PartsCatalog.API.DTOs;
 using PartsCatalog.API.Models;
 using PartsCatalog.API.Repositories;
@@ -7,38 +9,33 @@ namespace PartsCatalog.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PecasController : ControllerBase
     {
         private readonly IPecaRepository _repository;
+        private readonly IMapper _mapper; // ⬅️ Injeção do AutoMapper
 
-        public PecasController(IPecaRepository repository)
+        public PecasController(IPecaRepository repository, IMapper mapper)
         {
             _repository = repository;
+            _mapper = mapper;
         }
 
         // GET: api/pecas
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<PecaResponse>>> ObterTodas()
         {
             var pecas = await _repository.ObterTodasAsync();
 
-            var response = pecas.Select(p => new PecaResponse
-            {
-                Id = p.Id,
-                Nome = p.Nome,
-                ReferenciaPeca = p.ReferenciaPeca,
-                Categoria = p.Categoria,
-                Compatibilidade = p.Compatibilidade,
-                PrecoUnitario = p.PrecoUnitario,
-                StockDisponivel = p.StockDisponivel,
-                Ativo = p.Ativo
-            });
+            var response = _mapper.Map<IEnumerable<PecaResponse>>(pecas);
 
             return Ok(response);
         }
 
         // GET: api/pecas/{id}
         [HttpGet("{id:guid}")]
+        [AllowAnonymous]
         public async Task<ActionResult<PecaResponse>> ObterPorId(Guid id)
         {
             var peca = await _repository.ObterPorIdAsync(id);
@@ -46,17 +43,7 @@ namespace PartsCatalog.API.Controllers
             if (peca == null)
                 return NotFound("Peça não encontrada.");
 
-            var response = new PecaResponse
-            {
-                Id = peca.Id,
-                Nome = peca.Nome,
-                ReferenciaPeca = peca.ReferenciaPeca,
-                Categoria = peca.Categoria,
-                Compatibilidade = peca.Compatibilidade,
-                PrecoUnitario = peca.PrecoUnitario,
-                StockDisponivel = peca.StockDisponivel,
-                Ativo = peca.Ativo
-            };
+            var response = _mapper.Map<PecaResponse>(peca);
 
             return Ok(response);
         }
@@ -65,31 +52,15 @@ namespace PartsCatalog.API.Controllers
         [HttpPost]
         public async Task<ActionResult<PecaResponse>> Criar([FromBody] CriarPecaRequest request)
         {
-            var novaPeca = new Peca
-            {
-                Id = Guid.NewGuid(),
-                Nome = request.Nome,
-                ReferenciaPeca = request.ReferenciaPeca,
-                Categoria = request.Categoria,
-                Compatibilidade = request.Compatibilidade,
-                PrecoUnitario = request.PrecoUnitario,
-                StockDisponivel = request.StockDisponivel,
-                Ativo = true
-            };
+            // Mapeia a request para a entidade Peca
+            var novaPeca = _mapper.Map<Peca>(request);
+
+            novaPeca.Id = Guid.NewGuid();
+            novaPeca.Ativo = true;
 
             await _repository.CriarAsync(novaPeca);
 
-            var response = new PecaResponse
-            {
-                Id = novaPeca.Id,
-                Nome = novaPeca.Nome,
-                ReferenciaPeca = novaPeca.ReferenciaPeca,
-                Categoria = novaPeca.Categoria,
-                Compatibilidade = novaPeca.Compatibilidade,
-                PrecoUnitario = novaPeca.PrecoUnitario,
-                StockDisponivel = novaPeca.StockDisponivel,
-                Ativo = novaPeca.Ativo
-            };
+            var response = _mapper.Map<PecaResponse>(novaPeca);
 
             return CreatedAtAction(nameof(ObterPorId), new { id = novaPeca.Id }, response);
         }
@@ -103,13 +74,8 @@ namespace PartsCatalog.API.Controllers
             if (peca == null)
                 return NotFound("Peça não encontrada.");
 
-            peca.Nome = request.Nome;
-            peca.ReferenciaPeca = request.ReferenciaPeca;
-            peca.Categoria = request.Categoria;
-            peca.Compatibilidade = request.Compatibilidade;
-            peca.PrecoUnitario = request.PrecoUnitario;
-            peca.StockDisponivel = request.StockDisponivel;
-            peca.Ativo = request.Ativo;
+            // Copia os valores do request diretamente para a peça existente na base de dados
+            _mapper.Map(request, peca);
 
             await _repository.AtualizarAsync(peca);
 
@@ -127,6 +93,31 @@ namespace PartsCatalog.API.Controllers
 
             await _repository.RemoverAsync(id);
             return NoContent();
+        }
+
+        // Endpoint privado (apenas Mecânico/Gestor) para inativação de peças
+        [HttpPatch("{id:guid}/inativar")]
+        [Authorize(Roles = "Mecanico,Gestor,Admin")] 
+        public async Task<IActionResult> InativarPeca(Guid id)
+        {
+            var sucesso = await _repository.InativarAsync(id);
+            if (!sucesso)
+                return NotFound("Peça não encontrada.");
+
+            return NoContent(); 
+        }
+
+        // GET: api/pecas/{id}/disponibilidade?quantidade=2
+        [HttpGet("{id:guid}/disponibilidade")]
+        [AllowAnonymous]
+        public async Task<ActionResult<bool>> VerificarDisponibilidade(Guid id, [FromQuery] int quantidade)
+        {
+            if (quantidade <= 0)
+                return BadRequest("A quantidade deve ser maior que zero.");
+
+            var disponivel = await _repository.VerificarDisponibilidadeAsync(id, quantidade);
+
+            return Ok(disponivel);
         }
     }
 }
