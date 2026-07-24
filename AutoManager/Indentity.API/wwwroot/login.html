@@ -68,6 +68,24 @@
             margin-top: 10px;
             font-size: 14px;
         }
+
+        /* Estilo do botão / link de registo */
+        .register-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+            .register-link a {
+                color: #28a745;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+                .register-link a:hover {
+                    text-decoration: underline;
+                }
     </style>
 </head>
 <body>
@@ -86,6 +104,11 @@
             <button type="submit" class="btn-submit">Entrar</button>
             <div id="errorMsg" class="error-msg"></div>
         </form>
+
+        <!-- Botão/Link para navegar para a página de registo -->
+        <div class="register-link">
+            Ainda não tem conta? <a href="register.html">Registar aqui</a>
+        </div>
     </div>
 
     <script>
