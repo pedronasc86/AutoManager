@@ -1,4 +1,7 @@
-﻿using System.Net.Http.Json;
+﻿using System;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using WorkShop.API.DTOs;
 
 namespace WorkShop.API.Services
@@ -12,12 +15,19 @@ namespace WorkShop.API.Services
             _httpClient = httpClient;
         }
 
-        // Consulta a PartsCatalog.API para verificar peça e stock
-        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
+        // Ajustado para receber int (ou string, conforme o teu DTO)
+        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(int pecaId, int quantidadeDesejada)
         {
+            // =========================================================================
+            // MOCK TEMPORÁRIO (Garante que a tua API avança sem depender da dele)
+            // =========================================================================
+            return await Task.FromResult((true, 25.50m, string.Empty));
+
+            /* 
+            CÓDIGO REAL (Basta apagar a linha de cima quando ele entregar a API dele):
+
             try
             {
-                // Faz o pedido GET à API de Catálogo do teu colega
                 var resposta = await _httpClient.GetAsync($"api/pecas/{pecaId}");
 
                 if (!resposta.IsSuccessStatusCode)
@@ -41,9 +51,9 @@ namespace WorkShop.API.Services
             }
             catch (Exception ex)
             {
-                // Caso a API do colega esteja desligada durante os teus testes locais
                 return (false, 0, $"Erro de comunicação com PartsCatalog.API: {ex.Message}");
             }
+            */
         }
     }
 }

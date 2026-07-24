@@ -10,33 +10,34 @@ namespace WorkShop.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // RF8 / RF9: Exige que o utilizador esteja autenticado
+    [Authorize] // Exige JWT Token para todas as rotas
     public class OrdensReparacaoController : ControllerBase
     {
         private readonly WorkshopContext _contexto;
         private readonly CatalogoPecasService _catalogoPecasService;
 
-        /// <summary>
-        /// Construtor do controlador de ordens de reparação.
-        /// </summary>
-        /// <param name="contexto"></param>
-        /// <param name="catalogoPecasService"></param>
         public OrdensReparacaoController(WorkshopContext contexto, CatalogoPecasService catalogoPecasService)
         {
             _contexto = contexto;
             _catalogoPecasService = catalogoPecasService;
         }
 
-        /// <summary>
-        /// Cria uma nova ordem de reparação.
-        /// </summary>
-        /// <param name="dto">Objeto contendo os dados necessários para criar a ordem de reparação.</param>
-        /// <returns>Retorna a ordem de reparação criada.</returns>
-        // RF8: POST /api/OrdensReparacao
+        // 1. GET: api/OrdensReparacao (Para a tabela principal do Dashboard)
+        [HttpGet]
+        public async Task<IActionResult> ObterTodas()
+        {
+            var ordens = await _contexto.OrdensReparacao
+                .OrderByDescending(o => o.DataEntrada)
+                .ToListAsync();
+
+            return Ok(ordens.Select(MapearParaRespostaDto));
+        }
+
+        // 2. POST: api/OrdensReparacao (Para criar nova ordem)
         [HttpPost]
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
         {
-            // 1. Validar se o veículo existe
+            // Validar veículo
             var veiculoExiste = await _contexto.Veiculos.AnyAsync(v => v.Id == dto.VeiculoId);
             if (!veiculoExiste)
             {
@@ -45,23 +46,22 @@ namespace WorkShop.API.Controllers
 
             decimal totalCustoPecas = 0;
 
-            // 2. Consulta a PartsCatalog.API (via HttpClient) para verificar stock e preços
+            // Validar peças com o serviço do catálogo
             if (dto.Pecas != null && dto.Pecas.Count > 0)
             {
                 foreach (var itemPeca in dto.Pecas)
                 {
-                    var (temStock, precoUnitario, mensagemErro) = await _catalogoPecasService.VerificarStockEObterPrecoAsync(itemPeca.PecaId, itemPeca.Quantidade);
+                    var resultadoPeca = await _catalogoPecasService.VerificarStockEObterPrecoAsync(Convert.ToInt32(itemPeca.PecaId), itemPeca.Quantidade);
 
-                    if (!temStock)
+                    if (!resultadoPeca.TemStock)
                     {
-                        return BadRequest($"Falha na validação das peças: {mensagemErro}");
+                        return BadRequest($"Falha na validação das peças: {resultadoPeca.MensagemErro}");
                     }
 
-                    totalCustoPecas += (precoUnitario * itemPeca.Quantidade);
+                    totalCustoPecas += (resultadoPeca.PrecoUnitario * itemPeca.Quantidade);
                 }
             }
 
-            // 3. Guarda a Ordem de Reparação na BD com estado "Em Curso" e calcula o total
             var ordem = new OrdemReparacao
             {
                 DescricaoProblema = dto.DescricaoProblema,
@@ -79,7 +79,17 @@ namespace WorkShop.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id = ordem.Id }, MapearParaRespostaDto(ordem));
         }
 
-        // RF8: PUT /api/OrdensReparacao/{id} (Atualizar Estado / Concluir)
+        // 3. GET: api/OrdensReparacao/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ObterPorId(int id)
+        {
+            var ordem = await _contexto.OrdensReparacao.FindAsync(id);
+            if (ordem == null) return NotFound();
+
+            return Ok(MapearParaRespostaDto(ordem));
+        }
+
+        // 4. PUT: api/OrdensReparacao/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> AtualizarOrdem(int id, [FromBody] AtualizarOrdemReparacaoDto dto)
         {
@@ -105,17 +115,7 @@ namespace WorkShop.API.Controllers
             return Ok(MapearParaRespostaDto(ordem));
         }
 
-        // Obter Ordem por ID
-        [HttpGet("{id}")]
-        public async Task<IActionResult> ObterPorId(int id)
-        {
-            var ordem = await _contexto.OrdensReparacao.FindAsync(id);
-            if (ordem == null) return NotFound();
-
-            return Ok(MapearParaRespostaDto(ordem));
-        }
-
-        // RF9: Consultar Histórico por Veículo
+        // 5. GET: api/OrdensReparacao/veiculo/{veiculoId}
         [HttpGet("veiculo/{veiculoId}")]
         public async Task<IActionResult> ObterHistoricoPorVeiculo(int veiculoId)
         {
@@ -127,7 +127,7 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // RF9: Consultar Histórico por Cliente
+        // 6. GET: api/OrdensReparacao/cliente/{clienteId}
         [HttpGet("cliente/{clienteId}")]
         public async Task<IActionResult> ObterHistoricoPorCliente(string clienteId)
         {
@@ -139,11 +139,19 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        /// <summary>
-        /// Mapeia uma entidade OrdemReparacao para o DTO de resposta RespostaOrdemReparacaoDto.
-        /// </summary>
-        /// <param name="ordem"></param>
-        /// <returns></returns>
+        // 7. DELETE: api/OrdensReparacao/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> ApagarOrdem(int id)
+        {
+            var ordem = await _contexto.OrdensReparacao.FindAsync(id);
+            if (ordem == null) return NotFound();
+
+            _contexto.OrdensReparacao.Remove(ordem);
+            await _contexto.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private static RespostaOrdemReparacaoDto MapearParaRespostaDto(OrdemReparacao ordem)
         {
             return new RespostaOrdemReparacaoDto
