@@ -94,6 +94,28 @@ namespace PartsCatalog.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id = novaPeca.Id }, response);
         }
 
+        // PUT: api/pecas/{id}
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> Atualizar(Guid id, [FromBody] AtualizarPecaRequest request)
+        {
+            var peca = await _repository.ObterPorIdAsync(id);
+
+            if (peca == null)
+                return NotFound("Peça não encontrada.");
+
+            peca.Nome = request.Nome;
+            peca.ReferenciaPeca = request.ReferenciaPeca;
+            peca.Categoria = request.Categoria;
+            peca.Compatibilidade = request.Compatibilidade;
+            peca.PrecoUnitario = request.PrecoUnitario;
+            peca.StockDisponivel = request.StockDisponivel;
+            peca.Ativo = request.Ativo;
+
+            await _repository.AtualizarAsync(peca);
+
+            return NoContent();
+        }
+
         // DELETE: api/pecas/{id}
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Remover(Guid id)
