@@ -6,7 +6,12 @@ using WorkShop.API.DTOs;
 
 namespace WorkShop.API.Services
 {
-    public class CatalogoPecasService
+    public interface ICatalogoPecasService
+    {
+        Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada);
+    }
+
+    public class CatalogoPecasService : ICatalogoPecasService
     {
         private readonly HttpClient _httpClient;
 
@@ -15,17 +20,8 @@ namespace WorkShop.API.Services
             _httpClient = httpClient;
         }
 
-        // Ajustado para receber int (ou string, conforme o teu DTO)
-        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(int pecaId, int quantidadeDesejada)
+        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
         {
-            // =========================================================================
-            // MOCK TEMPORÁRIO (Garante que a tua API avança sem depender da dele)
-            // =========================================================================
-            return await Task.FromResult((true, 25.50m, string.Empty));
-
-            /* 
-            CÓDIGO REAL (Basta apagar a linha de cima quando ele entregar a API dele):
-
             try
             {
                 var resposta = await _httpClient.GetAsync($"api/pecas/{pecaId}");
@@ -53,7 +49,6 @@ namespace WorkShop.API.Services
             {
                 return (false, 0, $"Erro de comunicação com PartsCatalog.API: {ex.Message}");
             }
-            */
         }
     }
 }

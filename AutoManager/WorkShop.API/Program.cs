@@ -14,7 +14,7 @@ namespace WorkShop.API
 
             // 1. Configurar DbContext com fallback de segurança para a Migration
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? "Server=(localdb)\\mssqllocaldb;Database=AutoManager_WorkshopDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+                ?? "Server=(localdb)\\mssqllocaldb;Database=AutoManagerDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
 
             builder.Services.AddDbContext<WorkshopContext>(options =>
                 options.UseSqlServer(connectionString));
@@ -41,11 +41,12 @@ namespace WorkShop.API
                 client.BaseAddress = new Uri("https://localhost:5039/"); // URL onde a PartsCatalog.API corre
             });
 
+            // CORS corrigido para permitir o dashboard (qualquer origem local ou desenvolvimento)
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowIdentityAPI", policy =>
+                options.AddPolicy("AllowDashboard", policy =>
                 {
-                    policy.WithOrigins("https://localhost:7194")
+                    policy.AllowAnyOrigin()
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
@@ -53,7 +54,7 @@ namespace WorkShop.API
 
             var app = builder.Build();
 
-            app.UseCors("AllowIdentityAPI");
+            app.UseCors("AllowDashboard");
 
             // 4. Pipeline de Pedidos (HTTP Pipeline)
             if (app.Environment.IsDevelopment())
