@@ -12,7 +12,7 @@ using PartsCatalog.API.Data;
 namespace PartsCatalog.API.Migrations
 {
     [DbContext(typeof(CatalogDbContext))]
-    [Migration("20260722205909_InitialCreate")]
+    [Migration("20260724183833_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
