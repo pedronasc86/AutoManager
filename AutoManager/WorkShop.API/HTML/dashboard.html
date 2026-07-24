@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WorkShop API</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .navbar {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+            .btn-logout:hover {
+                background-color: #bd2130;
+            }
+
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>WorkShop Management</h2>
+        <button id="btnLogout" class="btn-logout">Sair (Logout)</button>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h3>Bem-vindo ao Painel Principal da Oficina!</h3>
+            <p style="margin-top: 0.5rem; color: #555;">
+                Autenticação efetuada com sucesso através da Identity API. O teu Token JWT está pronto a ser utilizado para consultar reparações e clientes!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Mostra o token no console para confirmarmos
+        const token = localStorage.getItem('userToken');
+        console.log("Token recuperado no Dashboard:", token);
+
+        // Lógica de Logout
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            localStorage.removeItem('userToken');
+            window.location.href = 'https://localhost:7194/index.html';
+        });
+    </script>
+</body>
+</html>

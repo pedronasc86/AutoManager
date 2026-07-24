@@ -16,12 +16,22 @@ namespace WorkShop.API.Controllers
         private readonly WorkshopContext _contexto;
         private readonly CatalogoPecasService _catalogoPecasService;
 
+        /// <summary>
+        /// Construtor do controlador de ordens de reparação.
+        /// </summary>
+        /// <param name="contexto"></param>
+        /// <param name="catalogoPecasService"></param>
         public OrdensReparacaoController(WorkshopContext contexto, CatalogoPecasService catalogoPecasService)
         {
             _contexto = contexto;
             _catalogoPecasService = catalogoPecasService;
         }
 
+        /// <summary>
+        /// Cria uma nova ordem de reparação.
+        /// </summary>
+        /// <param name="dto">Objeto contendo os dados necessários para criar a ordem de reparação.</param>
+        /// <returns>Retorna a ordem de reparação criada.</returns>
         // RF8: POST /api/OrdensReparacao
         [HttpPost]
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
@@ -129,6 +139,11 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
+        /// <summary>
+        /// Mapeia uma entidade OrdemReparacao para o DTO de resposta RespostaOrdemReparacaoDto.
+        /// </summary>
+        /// <param name="ordem"></param>
+        /// <returns></returns>
         private static RespostaOrdemReparacaoDto MapearParaRespostaDto(OrdemReparacao ordem)
         {
             return new RespostaOrdemReparacaoDto

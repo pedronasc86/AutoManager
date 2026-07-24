@@ -1,0 +1,557 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoManager - Gestão de Oficina</title>
+    <!-- FontAwesome para Ícones Profissionais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-body: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --text-main: #334155;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Sidebar Sidebar Lateral */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 1rem 0;
+        }
+
+            .sidebar-menu li a {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 0.8rem 1.5rem;
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 0.95rem;
+                transition: all 0.2s;
+            }
+
+                .sidebar-menu li.active a, .sidebar-menu li a:hover {
+                    background-color: #1e293b;
+                    color: #38bdf8;
+                    border-left: 4px solid #38bdf8;
+                }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #1e293b;
+        }
+
+        .btn-logout {
+            width: 100%;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+            .btn-logout:hover {
+                background-color: #dc2626;
+            }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Top Header */
+        .top-header {
+            background-color: #fff;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Dashboard Container */
+        .container {
+            padding: 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-title {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 5px;
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.61rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .btn-primary:hover {
+                background-color: var(--primary-hover);
+            }
+
+        /* Table Design */
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            padding: 1rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Badges de Estado */
+        .badge {
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-pendente {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-andamento {
+            background-color: #e0f2fe;
+            color: #0284c7;
+        }
+
+        .badge-concluido {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 0.85rem;
+                font-weight: 600;
+                margin-bottom: 0.4rem;
+                color: #475569;
+            }
+
+            .form-group input, .form-group select, .form-group textarea {
+                width: 100%;
+                padding: 0.6rem;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 0.95rem;
+                outline: none;
+            }
+
+            .form-group textarea {
+                resize: vertical;
+                height: 80px;
+            }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Lateral -->
+    <aside class="sidebar">
+        <div>
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-wrench" style="color: #38bdf8;"></i> AutoManager
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active"><a href="#"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fa-solid fa-file-invoice-dollar"></i> Ordens de Reparação</a></li>
+                <li><a href="#"><i class="fa-solid fa-car"></i> Veículos</a></li>
+                <li><a href="#"><i class="fa-solid fa-users"></i> Clientes</a></li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <button id="btnLogout" class="btn-logout">
+                <i class="fa-solid fa-right-from-bracket"></i> Sair da Sessão
+            </button>
+        </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <header class="top-header">
+            <h2>Painel da Oficina</h2>
+            <div class="user-profile">
+                <div class="avatar">M</div>
+                <div>
+                    <strong style="display: block; font-size: 0.9rem;">Mecânico Responsável</strong>
+                    <span style="font-size: 0.75rem; color: #64748b;">WorkShop API</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- Indicadores KPI -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div>
+                        <div class="kpi-title">Ordens Abertas</div>
+                        <div class="kpi-value" id="countTotal">0</div>
+                    </div>
+                    <div class="kpi-icon" style="background: #e0f2fe; color: #0284c7;">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div>
+                        <div class="kpi-title">Em Andamento</div>
+                        <div class="kpi-value" id="countAndamento">0</div>
+                    </div>
+                    <div class="kpi-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div>
+                        <div class="kpi-title">Concluídas</div>
+                        <div class="kpi-value" id="countConcluido">0</div>
+                    </div>
+                    <div class="kpi-icon" style="background: #dcfce7; color: #15803d;">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela e Ações -->
+            <div class="section-header">
+                <h3>Ordens de Reparação Recentes</h3>
+                <button class="btn-primary" onclick="abrirModal()">
+                    <i class="fa-solid fa-plus"></i> Nova Ordem
+                </button>
+            </div>
+
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Veículo / Matrícula</th>
+                            <th>Descrição da Avaria</th>
+                            <th>Estado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaOrdens">
+                        <!-- Inserido dinamicamente pelo JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Criar Nova Ordem de Reparação -->
+    <div class="modal-overlay" id="modalOrdem">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Nova Ordem de Reparação</h3>
+                <button class="close-btn" onclick="fecharModal()">&times;</button>
+            </div>
+            <form id="formOrdem" onsubmit="guardarOrdem(event)">
+                <div class="form-group">
+                    <label>Nome do Cliente</label>
+                    <input type="text" id="cliente" placeholder="Ex: João Silva" required>
+                </div>
+                <div class="form-group">
+                    <label>Veículo & Matrícula</label>
+                    <input type="text" id="veiculo" placeholder="Ex: BMW 320d (AA-00-BB)" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrição do Problema / Serviço</label>
+                    <textarea id="descricao" placeholder="Ex: Mudança de óleo e calços de travão" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Estado Inicial</label>
+                    <select id="estado">
+                        <option value="Pendente">Pendente</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluído">Concluído</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">
+                    Guardar Ordem
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Dados de Exemplo Se Estiver Vazio (Mock Inicial)
+        const MOCK_INICIAL = [
+            { id: 101, cliente: 'Carlos Melo', veiculo: 'VW Golf (45-ZZ-12)', descricao: 'Ruído estranho na suspensão dianteira', estado: 'Em Andamento' },
+            { id: 102, cliente: 'Ana Santos', veiculo: 'Renault Clio (99-AA-33)', descricao: 'Revisão dos 60.000km e ar condicionado', estado: 'Pendente' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarOrdens();
+
+            // Evento de Logout
+            document.getElementById('btnLogout').addEventListener('click', () => {
+                localStorage.removeItem('userToken');
+                window.location.href = 'https://localhost:7194/index.html';
+            });
+        });
+
+        function obterOrdensGuardadas() {
+            const data = localStorage.getItem('ordensReparacao');
+            return data ? JSON.parse(data) : MOCK_INICIAL;
+        }
+
+        function carregarOrdens() {
+            const ordens = obterOrdensGuardadas();
+            const tabela = document.getElementById('tabelaOrdens');
+            tabela.innerHTML = '';
+
+            let pendentes = 0, andamento = 0, concluidos = 0;
+
+            ordens.forEach(o => {
+                if (o.estado === 'Pendente') pendentes++;
+                if (o.estado === 'Em Andamento') andamento++;
+                if (o.estado === 'Concluído') concluidos++;
+
+                let badgeClass = 'badge-pendente';
+                if (o.estado === 'Em Andamento') badgeClass = 'badge-andamento';
+                if (o.estado === 'Concluído') badgeClass = 'badge-concluido';
+
+                tabela.innerHTML += `
+                        <tr>
+                            <td><strong>#${o.id}</strong></td>
+                            <td>${o.cliente}</td>
+                            <td>${o.veiculo}</td>
+                            <td>${o.descricao}</td>
+                            <td><span class="badge ${badgeClass}">${o.estado}</span></td>
+                            <td>
+                                <button onclick="apagarOrdem(${o.id})" style="background:none; border:none; color:#ef4444; cursor:pointer;" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+            });
+
+            // Atualiza KPIs
+            document.getElementById('countTotal').textContent = ordens.length;
+            document.getElementById('countAndamento').textContent = andamento;
+            document.getElementById('countConcluido').textContent = concluidos;
+        }
+
+        function abrirModal() { document.getElementById('modalOrdem').style.display = 'flex'; }
+        function fecharModal() { document.getElementById('modalOrdem').style.display = 'none'; }
+
+        function guardarOrdem(event) {
+            event.preventDefault();
+
+            const ordens = obterOrdensGuardadas();
+            const novaOrdem = {
+                id: Math.floor(100 + Math.random() * 900), // Gera ID aleatório
+                cliente: document.getElementById('cliente').value,
+                veiculo: document.getElementById('veiculo').value,
+                descricao: document.getElementById('descricao').value,
+                estado: document.getElementById('estado').value
+            };
+
+            ordens.unshift(novaOrdem); // Adiciona ao início
+            localStorage.setItem('ordensReparacao', JSON.stringify(ordens));
+
+            carregarOrdens();
+            fecharModal();
+            document.getElementById('formOrdem').reset();
+        }
+
+        function apagarOrdem(id) {
+            if (confirm('Tem a certeza que deseja eliminar esta Ordem de Reparação?')) {
+                let ordens = obterOrdensGuardadas();
+                ordens = ordens.filter(o => o.id !== id);
+                localStorage.setItem('ordensReparacao', JSON.stringify(ordens));
+                carregarOrdens();
+            }
+        }
+    </script>
+</body>
+</html>

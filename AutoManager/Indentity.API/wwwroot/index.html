@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AutoManager Identity</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+            .login-card h2 {
+                margin-bottom: 1.5rem;
+                color: #0f172a;
+                text-align: center;
+                font-size: 1.8rem;
+            }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                color: #475569;
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                font-size: 1rem;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+                .form-group input:focus {
+                    border-color: #2563eb;
+                }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 0.5rem;
+        }
+
+            .btn-submit:hover {
+                background-color: #1d4ed8;
+            }
+
+        .error-message {
+            color: #dc2626;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>Entrar no AutoManager</h2>
+
+        <!-- Caixas para mensagens de erro -->
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- Campos de Login dentro de uma div simples (sem <form>) -->
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="exemplo@dominio.com" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Palavra-passe</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="button" id="btnSubmit" onclick="fazerLogin()" class="btn-submit">Entrar</button>
+    </div>
+
+    <!-- Script de Autenticação -->
+    <script src="js/auth.js"></script>
+</body>
+</html>

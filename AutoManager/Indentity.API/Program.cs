@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================================================================
-// 1. REGISTO DOS CONTROLLERS (Essencial para o Swagger encontrar os endpoints!)
+// 1. REGISTO DOS CONTROLLERS
 // =========================================================================
 builder.Services.AddControllers();
 
@@ -26,7 +27,7 @@ builder.Services.AddDbContext<AutoManagerDbContext>(options =>
 // =========================================================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // RF3: Mínimo 8 caracteres, números e símbolos[cite: 1]
+    // RF3: Mínimo 8 caracteres, números e símbolos
     options.Password.RequiredLength = 8;
     options.Password.RequireDigit = true;
     options.Password.RequireNonAlphanumeric = true;
@@ -117,11 +118,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// --- NOVO: SERVIR FICHEIROS ESTÁTICOS DA PASTA wwwroot ---
+app.UseDefaultFiles(); // Procura automaticamente pelo index.html
+app.UseStaticFiles();  // Permite carregar JS, CSS e imagens
+// -------------------------------------------------------
+
 // A ordem destes middlewares é obrigatória:
 app.UseAuthentication(); // 1º Valida o Token
 app.UseAuthorization();  // 2º Valida permissões/roles
 
-// Mapeia os endpoints dos Controllers (necessário para os endpoints aparecerem no Swagger)
+// Mapeia os endpoints dos Controllers
 app.MapControllers();
 
 app.Run();

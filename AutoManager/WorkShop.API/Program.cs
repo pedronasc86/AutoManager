@@ -41,7 +41,19 @@ namespace WorkShop.API
                 client.BaseAddress = new Uri("https://localhost:5039/"); // URL onde a PartsCatalog.API corre
             });
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowIdentityAPI", policy =>
+                {
+                    policy.WithOrigins("https://localhost:7194")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
             var app = builder.Build();
+
+            app.UseCors("AllowIdentityAPI");
 
             // 4. Pipeline de Pedidos (HTTP Pipeline)
             if (app.Environment.IsDevelopment())
@@ -53,6 +65,9 @@ namespace WorkShop.API
             app.UseCustomMiddlewares();
 
             app.UseHttpsRedirection();
+
+            app.UseDefaultFiles(); // Procura ficheiros padrão na wwwroot
+            app.UseStaticFiles();  // Permite servir ficheiros estáticos (HTML, JS, CSS)
 
             app.UseAuthentication();
             app.UseAuthorization();
