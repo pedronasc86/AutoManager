@@ -118,11 +118,18 @@ namespace Identity.API.Controllers
             // 3. Gerar o Token JWT com as claims (sub, email, role)
             var token = await _tokenService.GenerateJwtTokenAsync(user);
 
+            Response.Cookies.Append("jwtToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(8)
+            });
+
             return Ok(new AuthResponseDto
             {
                 IsSuccess = true,
                 Message = "Login efetuado com sucesso!",
-                Token = token,
                 Expiration = DateTime.UtcNow.AddHours(8)
             });
         }
