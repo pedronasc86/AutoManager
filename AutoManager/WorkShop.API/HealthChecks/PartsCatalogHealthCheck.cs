@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
-using WorkShop.API.Services;
-//using WorkShop.API.Services.Integration;
+using WorkShop.API.Services.Integration;
 
 namespace WorkShop.API.HealthChecks;
 
 public class PartsCatalogHealthCheck : IHealthCheck
 {
-    private readonly CatalogoPecasService _catalogClient;
+    private readonly ICatalogServiceClient _catalogClient;
 
-    public PartsCatalogHealthCheck(CatalogoPecasService catalogClient)
+    public PartsCatalogHealthCheck(ICatalogServiceClient catalogClient)
     {
         _catalogClient = catalogClient;
     }
@@ -17,9 +16,7 @@ public class PartsCatalogHealthCheck : IHealthCheck
     {
         try
         {
-            // Chamada ao método correto do CatalogoPecasService
-            var (temStock, preco, mensagemErro) = await _catalogClient.VerificarStockEObterPrecoAsync(1, 1);
-
+            var result = await _catalogClient.CheckPartAvailabilityAsync(1, 1);
             return HealthCheckResult.Healthy("PartsCatalog.API está operacional.");
         }
         catch (Exception ex)
