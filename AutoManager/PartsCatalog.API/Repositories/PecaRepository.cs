@@ -44,5 +44,25 @@ namespace PartsCatalog.API.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<bool> InativarAsync(Guid id)
+        {
+            var peca = await _context.Pecas.FindAsync(id);
+            if (peca == null) return false;
+
+            peca.Ativo = false; // Descontinua a peça
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> VerificarDisponibilidadeAsync(Guid id, int quantidade)
+        {
+            var peca = await _context.Pecas.FindAsync(id);
+
+            if (peca == null || !peca.Ativo)
+                return false;
+
+            return peca.StockDisponivel >= quantidade;
+        }
     }
 }

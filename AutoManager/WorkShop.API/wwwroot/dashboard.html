@@ -562,15 +562,11 @@
         const tokenFromUrl = urlParams.get('token');
 
         if (tokenFromUrl) {
-            localStorage.setItem('userToken', tokenFromUrl);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        let token = localStorage.getItem('userToken') || '';
-
         function terminarSessao() {
-            localStorage.removeItem('userToken');
-            window.location.href = 'https://localhost:7194/index.html'; // Ajusta para o URL da tua Identity/Login se necessário
+            window.location.href = 'https://localhost:7194/login.html';
         }
 
         function abrirModalNovaOrdem() {
@@ -585,10 +581,7 @@
             try {
                 const response = await fetch('https://localhost:7085/api/OrdensReparacao', {
                     method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {

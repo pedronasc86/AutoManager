@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>AutoManager - Criar Conta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            box-sizing: border-box;
+        }
+
+        .register-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+            .register-card h2 {
+                margin-bottom: 20px;
+                color: #333;
+                text-align: center;
+            }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                color: #666;
+            }
+
+            .form-group input, .form-group select {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-sizing: border-box;
+                background-color: white;
+            }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745; /* Verde para destacar o Registo */
+            border: none;
+            color: white;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+            .btn-submit:hover {
+                background-color: #218838;
+            }
+
+        .msg-box {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .error-msg {
+            color: red;
+        }
+
+        .success-msg {
+            color: green;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+            .login-link a {
+                color: #007bff;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+                .login-link a:hover {
+                    text-decoration: underline;
+                }
+    </style>
+</head>
+<body>
+
+    <div class="register-card">
+        <h2>Criar Conta</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" required placeholder="utilizador@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password (Mín. 8 caracteres, números e símbolos)</label>
+                <input type="password" id="password" required placeholder="Ex: Auto123!">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Password</label>
+                <input type="password" id="confirmPassword" required placeholder="Repita a password">
+            </div>
+            <div class="form-group">
+                <label for="role">Perfil / Função</label>
+                <select id="role" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Empresa">Empresa / Contabilista</option>
+                    <option value="Mecanico">Mecânico</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-submit">Criar Conta</button>
+            <div id="msgBox" class="msg-box"></div>
+        </form>
+
+        <div class="login-link">
+            Já tem conta? <a href="login.html">Voltar ao Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+            const msgDiv = document.getElementById('msgBox');
+
+            msgDiv.textContent = '';
+            msgDiv.className = 'msg-box';
+
+            // Validação simples no frontend de passwords coincidentes
+            if (password !== confirmPassword) {
+                msgDiv.textContent = 'As passwords não coincidem.';
+                msgDiv.classList.add('error-msg');
+                return;
+            }
+
+            try {
+                const response = await fetch('https://localhost:7194/api/Auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, confirmPassword, role })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.isSuccess) {
+                    msgDiv.textContent = 'Conta criada com sucesso! A redirecionar para o login...';
+                    msgDiv.classList.add('success-msg');
+
+                    // Aguarda 2 segundos e redireciona automaticamente para a página de login
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    msgDiv.textContent = data.message || 'Erro ao criar conta. Verifique os requisitos da password.';
+                    msgDiv.classList.add('error-msg');
+                }
+            } catch (err) {
+                console.error(err);
+                msgDiv.textContent = 'Erro de ligação ao servidor.';
+                msgDiv.classList.add('error-msg');
+            }
+        });
+    </script>
+</body>
+</html>

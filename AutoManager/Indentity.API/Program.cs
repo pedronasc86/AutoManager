@@ -16,6 +16,16 @@ var builder = WebApplication.CreateBuilder(args);
 // =========================================================================
 builder.Services.AddControllers();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Dashboard", policy =>
+    {
+        policy.WithOrigins("https://localhost:7085")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 // =========================================================================
 // 2. CONFIGURAÇÃO DA BASE DE DADOS (EF Core)
 // =========================================================================
@@ -67,6 +77,15 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies["jwtToken"];
+            return Task.CompletedTask;
+        }
+    };
+
 });
 
 builder.Services.AddAuthorization();
@@ -118,8 +137,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("Dashboard");
+
+// Define que a página inicial predefinida será a register.html
+var defaultFileOptions = new DefaultFilesOptions();
+defaultFileOptions.DefaultFileNames.Clear();
+defaultFileOptions.DefaultFileNames.Add("login.html");
+
 // --- NOVO: SERVIR FICHEIROS ESTÁTICOS DA PASTA wwwroot ---
-app.UseDefaultFiles(); // Procura automaticamente pelo index.html
+app.UseDefaultFiles(defaultFileOptions); // Procura automaticamente pelo index.html
 app.UseStaticFiles();  // Permite carregar JS, CSS e imagens
 // -------------------------------------------------------
 
