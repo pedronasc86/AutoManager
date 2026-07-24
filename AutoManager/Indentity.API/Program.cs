@@ -118,8 +118,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Define que a página inicial predefinida será a register.html
+var defaultFileOptions = new DefaultFilesOptions();
+defaultFileOptions.DefaultFileNames.Clear();
+defaultFileOptions.DefaultFileNames.Add("login.html");
+
 // --- NOVO: SERVIR FICHEIROS ESTÁTICOS DA PASTA wwwroot ---
-app.UseDefaultFiles(); // Procura automaticamente pelo index.html
+app.UseDefaultFiles(defaultFileOptions); // Procura automaticamente pelo index.html
 app.UseStaticFiles();  // Permite carregar JS, CSS e imagens
 // -------------------------------------------------------
 
