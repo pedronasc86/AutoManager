@@ -3,6 +3,7 @@ using WorkShop.API.HealthChecks;
 using WorkShop.API.Services.Auth;
 using Microsoft.EntityFrameworkCore;
 using WorkShop.API.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace WorkShop.API
 {
@@ -17,7 +18,10 @@ namespace WorkShop.API
                 ?? "Server=(localdb)\\mssqllocaldb;Database=AutoManager_WorkshopDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
 
             builder.Services.AddDbContext<WorkshopContext>(options =>
-                options.UseSqlServer(connectionString));
+                options.UseSqlServer(
+                    connectionString
+                )
+            );
 
             // 2. Controladores e Swagger
             builder.Services.AddControllers();
@@ -28,6 +32,19 @@ namespace WorkShop.API
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<IUserContextService, UserContextService>();
             builder.Services.AddCustomAuthentication(builder.Configuration);
+            builder.Services.Configure<JwtBearerOptions>(
+                JwtBearerDefaults.AuthenticationScheme,
+                options =>
+                {
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            context.Token = context.Request.Cookies["jwtToken"];
+                            return Task.CompletedTask;
+                        }
+                    };
+            });
             builder.Services.AddCatalogHttpClient(builder.Configuration);
 
             builder.Services.AddAuthorization();

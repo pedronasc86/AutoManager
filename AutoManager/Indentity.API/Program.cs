@@ -16,6 +16,16 @@ var builder = WebApplication.CreateBuilder(args);
 // =========================================================================
 builder.Services.AddControllers();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Dashboard", policy =>
+    {
+        policy.WithOrigins("https://localhost:7085")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 // =========================================================================
 // 2. CONFIGURAÇÃO DA BASE DE DADOS (EF Core)
 // =========================================================================
@@ -67,6 +77,15 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies["jwtToken"];
+            return Task.CompletedTask;
+        }
+    };
+
 });
 
 builder.Services.AddAuthorization();
@@ -117,6 +136,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("Dashboard");
 
 // Define que a página inicial predefinida será a register.html
 var defaultFileOptions = new DefaultFilesOptions();
