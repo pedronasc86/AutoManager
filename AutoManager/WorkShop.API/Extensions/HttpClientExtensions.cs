@@ -1,20 +1,27 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 using WorkShop.API.Services;
+//using WorkShop.API.Services.Integration;
 
-namespace WorkShop.API.Extensions
+namespace WorkShop.API.Extensions;
+
+public static class HttpClientExtensions
 {
-    public static class HttpClientExtensions
-    {
-        public static IServiceCollection AddCatalogHttpClient(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddHttpClient<ICatalogoPecasService, CatalogoPecasService>(client =>
-            {
-                client.BaseAddress = new Uri(configuration["ExternalServices:PartsCatalogUrl"] ?? "https://localhost:5001");
-            });
+    //public static IServiceCollection AddCatalogHttpClient(this IServiceCollection services, IConfiguration configuration)
+    //{
+    //    services.AddHttpClient<ICatalogServiceClient, CatalogServiceClient>(client =>
+    //    {
+    //        client.BaseAddress = new Uri(configuration["ExternalServices:PartsCatalogUrl"] ?? "https://localhost:5001");
+    //    });
 
-            return services;
-        }
+    //    return services;
+    //}
+
+    public static IServiceCollection AddCatalogHttpClient(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddHttpClient<CatalogoPecasService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["ExternalServices:PartsCatalogUrl"] ?? "https://localhost:5001");
+        });
+
+        return services;
     }
 }
