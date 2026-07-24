@@ -97,7 +97,7 @@ namespace PartsCatalog.API.Controllers
 
         // Endpoint privado (apenas Mecânico/Gestor) para inativação de peças
         [HttpPatch("{id:guid}/inativar")]
-        [Authorize(Roles = "Mecanico,Gestor,Admin")] 
+        [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")] 
         public async Task<IActionResult> InativarPeca(Guid id)
         {
             var sucesso = await _repository.InativarAsync(id);
