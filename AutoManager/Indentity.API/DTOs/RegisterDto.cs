@@ -4,6 +4,10 @@ namespace Identity.API.DTOs
 {
     public class RegisterDto
     {
+        [Required(ErrorMessage = "O primeiro nome é obrigatório.")]
+        [StringLength(25, MinimumLength = 2, ErrorMessage = "O primeiro nome deve ter entre 2 e 25 caracteres.")]
+        public string FirstName { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "O email é obrigatório.")]
         [EmailAddress(ErrorMessage = "O formato do email é inválido.")]
         public string Email { get; set; } = string.Empty;
