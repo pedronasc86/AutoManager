@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PartsCatalog.API.Data;
 using PartsCatalog.API.Mappings;
 using PartsCatalog.API.Repositories;
+using PartsCatalog.API.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. ADICIONAR O SERVIÇO DE AUTENTICAÇÃO JWT
-
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -34,11 +35,22 @@ builder.Services.AddAuthorization();
 builder.Services.AddDbContext<CatalogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Registo de Repositórios e Serviços
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
+builder.Services.AddScoped<IPecaService, PecaService>();
 
-builder.Services.AddControllers();
-
+// AutoMapper
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
+
+// Controllers + Configuração do OData
+builder.Services.AddControllers()
+    .AddOData(options => options
+        .Select()       // Permite selecionar campos
+        .Filter()       // Permite filtrar ($filter)
+        .OrderBy()      // Permite ordenar ($orderby)
+        .Count()        // Permite contar ($count)
+        .SetMaxTop(10)  // Limite máximo de registos por página ($top)
+    );
 
 // 3. CONFIGURAÇÃO DO SWAGGER (COM BOTÃO AUTHORIZE PARA O TOKEN JWT)
 builder.Services.AddEndpointsApiExplorer();
@@ -46,7 +58,6 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "PartsCatalog.API", Version = "v1" });
 
-    // Adiciona a definição de segurança para o botão Authorize
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Insira o token JWT neste formato: Bearer {seu_token}",
