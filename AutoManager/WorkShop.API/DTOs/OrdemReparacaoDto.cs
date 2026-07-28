@@ -31,10 +31,11 @@ namespace WorkShop.API.DTOs
     // DTO para ler os dados que vm da PartsCatalog.API via HttpClient
     public class RespostaPecaCatalogoDto
     {
-        public string Id { get; set; } = string.Empty;
+        public Guid Id { get; set; }
         public string Nome { get; set; } = string.Empty;
-        public decimal Preco { get; set; }
-        public int Stock { get; set; }
+        public decimal PrecoUnitario { get; set; }
+        public int StockDisponivel { get; set; }
+        public bool Ativo { get; set; }
     }
 
     // DTO de resposta da Ordem de Reparação

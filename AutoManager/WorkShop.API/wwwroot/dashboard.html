@@ -436,6 +436,23 @@
             .btn-submit-modal:hover {
                 background: #059669;
             }
+
+        .mensagem-ordem {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+            .mensagem-ordem.sucesso {
+                display: block;
+                background-color: #dcfce7;
+                color: #166534;
+                border: 1px solid #86efac;
+            }
     </style>
 </head>
 <body>
@@ -552,6 +569,7 @@
                     <textarea id="descricaoInput" rows="3" required placeholder="Descreva a reparação necessária..."></textarea>
                 </div>
                 <button type="submit" class="btn-submit-modal">Registar Ordem (Validar Stock)</button>
+                <div id="mensagemOrdem" class="mensagem-ordem"></div>
             </form>
         </div>
     </div>
@@ -664,17 +682,29 @@
                 // Compatível com o endpoint /repair-order do RF8
                 const response = await fetch('https://localhost:7085/api/OrdensReparacao/repair-order', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(novaOrdem)
                 });
 
                 if (response.ok) {
-                    alert('Ordem de reparação criada com sucesso!');
-                    fecharModalNovaOrdem();
-                    carregarDadosDashboard();
+                    const mensagem = document.getElementById('mensagemOrdem');
+
+                    mensagem.textContent = 'Ordem de reparação criada com sucesso!';
+                    mensagem.className = 'mensagem-ordem sucesso';
+
+                    setTimeout(() => {
+                        fecharModalNovaOrdem();
+
+                        document.getElementById('formNovaOrdem').reset();
+
+                        mensagem.textContent = '';
+                        mensagem.className = 'mensagem-ordem';
+
+                        carregarDadosDashboard();
+                    }, 3000);
                 } else {
                     const errData = await response.json().catch(() => ({}));
                     alert('Erro ao criar ordem: ' + (errData.mensagem || errData.message || 'Verifique o stock ou os dados inseridos.'));

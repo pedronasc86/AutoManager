@@ -39,28 +39,44 @@ namespace WorkShop.API.Controllers
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
         {
             // Validar veículo
-            var veiculoExiste = await _contexto.Veiculos.AnyAsync(v => v.Id == dto.VeiculoId);
-            if (!veiculoExiste)
+            var veiculo = await _contexto.Veiculos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == dto.VeiculoId);
+
+            if (veiculo == null)
             {
-                return BadRequest(new { mensagem = $"Veículo com ID {dto.VeiculoId} não foi encontrado." });
+                return BadRequest(new
+                {
+                    mensagem = $"Veículo com ID {dto.VeiculoId} não foi encontrado."
+                });
+            }
+
+            if (!string.Equals(veiculo.ClienteId, dto.ClienteId, StringComparison.Ordinal))
+            {
+                return BadRequest(new
+                {
+                    mensagem = "O veículo indicado não pertence ao cliente indicado."
+                });
             }
 
             decimal totalCustoPecas = 0;
 
-            // Validar peças com o serviço do catálogo (Tratando o ID corretamente como string/Guid)
             if (dto.Pecas != null && dto.Pecas.Count > 0)
             {
                 foreach (var itemPeca in dto.Pecas)
                 {
-                    // Como a PartsCatalog usa Guid/string, passamos o identificador sem conversão forçada para int
-                    var resultadoPeca = await _catalogoPecasService.VerificarStockEObterPrecoAsync(itemPeca.PecaId, itemPeca.Quantidade);
+                    var resultadoPeca = await _catalogoPecasService
+                        .VerificarStockEObterPrecoAsync(itemPeca.PecaId, itemPeca.Quantidade);
 
                     if (!resultadoPeca.TemStock)
                     {
-                        return BadRequest(new { mensagem = $"Falha na validação das peças: {resultadoPeca.MensagemErro}" });
+                        return BadRequest(new
+                        {
+                            mensagem = $"Falha na validação das peças: {resultadoPeca.MensagemErro}"
+                        });
                     }
 
-                    totalCustoPecas += (resultadoPeca.PrecoUnitario * itemPeca.Quantidade);
+                    totalCustoPecas += resultadoPeca.PrecoUnitario * itemPeca.Quantidade;
                 }
             }
 
