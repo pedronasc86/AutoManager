@@ -6,7 +6,12 @@ using WorkShop.API.DTOs;
 
 namespace WorkShop.API.Services
 {
-    public class CatalogoPecasService
+    public interface ICatalogoPecasService
+    {
+        Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada);
+    }
+
+    public class CatalogoPecasService : ICatalogoPecasService
     {
         private readonly HttpClient _httpClient;
 
@@ -15,16 +20,17 @@ namespace WorkShop.API.Services
             _httpClient = httpClient;
         }
 
-        // Ajustado para receber int (ou string, conforme o teu DTO)
-        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(int pecaId, int quantidadeDesejada)
+        public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
         {
-            // =========================================================================
-            // MOCK TEMPORÁRIO (Garante que a tua API avança sem depender da dele)
-            // =========================================================================
-            return await Task.FromResult((true, 25.50m, string.Empty));
+            if (!Guid.TryParse(pecaId, out _))
+            {
+                return (false, 0, "O ID da peça não é válido.");
+            }
 
-            /* 
-            CÓDIGO REAL (Basta apagar a linha de cima quando ele entregar a API dele):
+            if (quantidadeDesejada <= 0)
+            {
+                return (false, 0, "A quantidade da peça deve ser superior a zero.");
+            }
 
             try
             {
@@ -32,28 +38,33 @@ namespace WorkShop.API.Services
 
                 if (!resposta.IsSuccessStatusCode)
                 {
-                    return (false, 0, $"Peça #{pecaId} não foi encontrada no Catálogo.");
+                    return (false, 0, $"Peça #{pecaId} não foi encontrada no catálogo.");
                 }
 
                 var peca = await resposta.Content.ReadFromJsonAsync<RespostaPecaCatalogoDto>();
 
                 if (peca == null)
                 {
-                    return (false, 0, $"Erro ao ler dados da peça #{pecaId}.");
+                    return (false, 0, "Não foi possível ler os dados da peça.");
                 }
 
-                if (peca.Stock < quantidadeDesejada)
+                if (!peca.Ativo)
                 {
-                    return (false, 0, $"Stock insuficiente para a peça '{peca.Nome}'. Disponível: {peca.Stock}, Solicitado: {quantidadeDesejada}.");
+                    return (false, 0, $"A peça '{peca.Nome}' está inativa.");
                 }
 
-                return (true, peca.Preco, string.Empty);
+                if (peca.StockDisponivel < quantidadeDesejada)
+                {
+                    return (false, 0,
+                        $"Stock insuficiente para '{peca.Nome}'. Disponível: {peca.StockDisponivel}.");
+                }
+
+                return (true, peca.PrecoUnitario, string.Empty);
             }
             catch (Exception ex)
             {
-                return (false, 0, $"Erro de comunicação com PartsCatalog.API: {ex.Message}");
+                return (false, 0, $"Não foi possível contactar o catálogo de peças: {ex.Message}");
             }
-            */
         }
     }
 }

@@ -12,7 +12,7 @@ using WorkShop.API.Data;
 namespace WorkShop.API.Migrations
 {
     [DbContext(typeof(WorkshopContext))]
-    [Migration("20260722214013_InitialWorkshop")]
+    [Migration("20260724203928_InitialWorkshop")]
     partial class InitialWorkshop
     {
         /// <inheritdoc />

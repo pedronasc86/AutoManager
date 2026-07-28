@@ -33,32 +33,50 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // 2. POST: api/OrdensReparacao (Para criar nova ordem)
+        // 2. POST: api/OrdensReparacao (Compatível com /repair-order do enunciado RF8)
         [HttpPost]
+        [HttpPost("repair-order")]
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
         {
             // Validar veículo
-            var veiculoExiste = await _contexto.Veiculos.AnyAsync(v => v.Id == dto.VeiculoId);
-            if (!veiculoExiste)
+            var veiculo = await _contexto.Veiculos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == dto.VeiculoId);
+
+            if (veiculo == null)
             {
-                return BadRequest($"Veículo com ID {dto.VeiculoId} não foi encontrado.");
+                return BadRequest(new
+                {
+                    mensagem = $"Veículo com ID {dto.VeiculoId} não foi encontrado."
+                });
+            }
+
+            if (!string.Equals(veiculo.ClienteId, dto.ClienteId, StringComparison.Ordinal))
+            {
+                return BadRequest(new
+                {
+                    mensagem = "O veículo indicado não pertence ao cliente indicado."
+                });
             }
 
             decimal totalCustoPecas = 0;
 
-            // Validar peças com o serviço do catálogo
             if (dto.Pecas != null && dto.Pecas.Count > 0)
             {
                 foreach (var itemPeca in dto.Pecas)
                 {
-                    var resultadoPeca = await _catalogoPecasService.VerificarStockEObterPrecoAsync(Convert.ToInt32(itemPeca.PecaId), itemPeca.Quantidade);
+                    var resultadoPeca = await _catalogoPecasService
+                        .VerificarStockEObterPrecoAsync(itemPeca.PecaId, itemPeca.Quantidade);
 
                     if (!resultadoPeca.TemStock)
                     {
-                        return BadRequest($"Falha na validação das peças: {resultadoPeca.MensagemErro}");
+                        return BadRequest(new
+                        {
+                            mensagem = $"Falha na validação das peças: {resultadoPeca.MensagemErro}"
+                        });
                     }
 
-                    totalCustoPecas += (resultadoPeca.PrecoUnitario * itemPeca.Quantidade);
+                    totalCustoPecas += resultadoPeca.PrecoUnitario * itemPeca.Quantidade;
                 }
             }
 
@@ -96,7 +114,7 @@ namespace WorkShop.API.Controllers
             var ordem = await _contexto.OrdensReparacao.FindAsync(id);
             if (ordem == null)
             {
-                return NotFound($"Ordem de reparação #{id} não encontrada.");
+                return NotFound(new { mensagem = $"Ordem de reparação #{id} não encontrada." });
             }
 
             if (!string.IsNullOrEmpty(dto.Estado))
@@ -127,7 +145,7 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // 6. GET: api/OrdensReparacao/cliente/{clienteId}
+        // 6. GET: api/OrdensReparacao/cliente/{clienteId} (Atende ao RF9)
         [HttpGet("cliente/{clienteId}")]
         public async Task<IActionResult> ObterHistoricoPorCliente(string clienteId)
         {

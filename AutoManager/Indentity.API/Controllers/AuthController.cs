@@ -3,6 +3,7 @@ using Identity.API.Services;
 using Indentity.API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Identity.API.Controllers
 {
@@ -51,7 +52,8 @@ namespace Identity.API.Controllers
             var newUser = new ApplicationUser
             {
                 UserName = dto.Email,
-                Email = dto.Email
+                Email = dto.Email,
+                name = dto.FirstName.Trim()
             };
 
             // 4. Tentar criar o utilizador na BD (Aplica as regras de Password Strong do RF3)
@@ -131,6 +133,23 @@ namespace Identity.API.Controllers
                 IsSuccess = true,
                 Message = "Login efetuado com sucesso!",
                 Expiration = DateTime.UtcNow.AddHours(8)
+            });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            return Ok(new CurrentUserDto
+            {
+                FirstName = user.name ?? string.Empty
             });
         }
     }

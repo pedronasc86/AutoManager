@@ -103,6 +103,11 @@
         <h2>Criar Conta</h2>
         <form id="registerForm">
             <div class="form-group">
+                <label for="firstName">Primeiro nome</label>
+                <input type="text" id="firstName" required maxlength="50"
+                       autocomplete="given-name" placeholder="Ex: João">
+            </div>
+            <div class="form-group">
                 <label for="email">E-mail</label>
                 <input type="email" id="email" required placeholder="utilizador@example.com">
             </div>
@@ -140,6 +145,7 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const role = document.getElementById('role').value;
             const msgDiv = document.getElementById('msgBox');
+            const firstName = document.getElementById('firstName').value.trim();
 
             msgDiv.textContent = '';
             msgDiv.className = 'msg-box';
@@ -155,7 +161,7 @@
                 const response = await fetch('https://localhost:7194/api/Auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, confirmPassword, role })
+                    body: JSON.stringify({ firstName, email, password, confirmPassword, role })
                 });
 
                 const data = await response.json();
