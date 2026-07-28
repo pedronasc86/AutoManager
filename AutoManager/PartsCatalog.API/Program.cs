@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PartsCatalog.API.Data;
 using PartsCatalog.API.Mappings;
 using PartsCatalog.API.Repositories;
@@ -8,7 +9,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 2. Adicionar o serviço de Autenticação JWT
+// 1. ADICIONAR O SERVIÇO DE AUTENTICAÇÃO JWT
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -28,26 +30,51 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Adicionar o DbContext
+// 2. CONFIGURAÇÃO DA BASE DE DADOS (EF CORE) E INJEÇÃO DE DEPENDÊNCIAS
 builder.Services.AddDbContext<CatalogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Registar o Repositório de Peças para Injeção de Dependência
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 
-// Adicionar suporte a Controllers
 builder.Services.AddControllers();
 
-// Regista o AutoMapper procurando perfis no projeto
 builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 
-// Configurar o Swagger (para documentação e testes no browser)
+// 3. CONFIGURAÇÃO DO SWAGGER (COM BOTÃO AUTHORIZE PARA O TOKEN JWT)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PartsCatalog.API", Version = "v1" });
+
+    // Adiciona a definição de segurança para o botão Authorize
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Insira o token JWT neste formato: Bearer {seu_token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-// Configurar o pipeline HTTP
+// 4. PIPELINE DE MIDDLEWARES HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -59,7 +86,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapear os endpoints dos teus Controllers
 app.MapControllers();
 
 app.Run();

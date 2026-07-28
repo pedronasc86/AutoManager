@@ -123,6 +123,7 @@
             try {
                 const response = await fetch('https://localhost:7194/api/Auth/login', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
@@ -130,8 +131,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.isSuccess) {
-                    // Envia o token via parâmetro de URL para a porta 7085 conseguir receber
-                    window.location.href = `https://localhost:7085/dashboard.html?token=${encodeURIComponent(data.token)}`;
+                    window.location.href = 'https://localhost:7085/dashboard.html';
                 } else {
                     errorDiv.textContent = data.message || 'Erro ao efetuar login.';
                 }

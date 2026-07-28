@@ -17,8 +17,8 @@ public class PartsCatalogHealthCheck : IHealthCheck
         try
         {
             // Chamada ao método correto do CatalogoPecasService
-
-            var (temStock, preco, mensagemErro) = await _catalogClient.VerificarStockEObterPrecoAsync(1, 1);
+            (bool temStock, decimal preco, string mensagemErro) =
+                await _catalogClient.VerificarStockEObterPrecoAsync("1", 1);
 
             return HealthCheckResult.Healthy("PartsCatalog.API está operacional.");
         }
