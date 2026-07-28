@@ -268,6 +268,13 @@
                 color: var(--text-primary);
             }
 
+        .table-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
         .btn-new {
             background-color: var(--accent-blue);
             color: white;
@@ -453,6 +460,42 @@
                 color: #166534;
                 border: 1px solid #86efac;
             }
+        }
+
+        /* Botões de Paginação na tabela das ordens de reparação*/
+        .btn-filter,
+        .btn-clear-filter,
+        .btn-pagina {
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-secondary);
+            padding: 9px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+            .btn-filter:hover,
+            .btn-clear-filter:hover,
+            .btn-pagina:hover:not(:disabled) {
+                color: var(--accent-blue);
+                border-color: var(--accent-blue);
+            }
+
+        .paginacao {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .btn-pagina:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -513,8 +556,19 @@
             <!-- TABELA DE DADOS REAIS -->
             <div class="table-section">
                 <div class="table-header">
-                    <h2>Ordens de Reparação Recentes</h2>
-                    <button class="btn-new" onclick="abrirModalNovaOrdem()"><i class="fa-solid fa-plus"></i> Nova Ordem</button>
+                    <h2>Ordens de Reparação</h2>
+                    <button class="btn-new" onclick="abrirModalNovaOrdem()">
+                        <i class="fa-solid fa-plus"></i> Nova Ordem
+                    </button>
+                </div>
+                <div class="table-filter-row">
+                    <input type="number" id="filtroVeiculoId"
+                           min="1" placeholder="ID do veículo">
+                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                        <i class="fa-solid fa-filter"></i> Filtrar
+                    </button>
+                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()"> Limpar
+                    </button>
                 </div>
                 <table>
                     <thead>
@@ -532,6 +586,17 @@
                         <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
+                <div class="paginacao">
+                    <button id="btnPaginaAnterior" class="btn-pagina" onclick="mudarPagina(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPagina">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinte" class="btn-pagina" onclick="mudarPagina(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -595,64 +660,125 @@
             document.getElementById('modalNovaOrdem').style.display = 'none';
         }
 
+        let paginaAtual = 1;
+        let totalPaginas = 1;
+        let filtroVeiculoId = null;
+
+        function mudarPagina(direcao) {
+            const novaPagina = paginaAtual + direcao;
+
+            if (novaPagina < 1 || novaPagina > totalPaginas) {
+                return;
+            }
+
+            paginaAtual = novaPagina;
+            carregarDadosDashboard();
+        }
+
+        function aplicarFiltroVeiculo() {
+            const valor = document.getElementById('filtroVeiculoId').value;
+
+            if (!valor || Number(valor) <= 0) {
+                alert('Introduz um ID de veículo válido.');
+                return;
+            }
+
+            filtroVeiculoId = Number(valor);
+            paginaAtual = 1;
+            carregarDadosDashboard();
+        }
+
+        function limparFiltroVeiculo() {
+            document.getElementById('filtroVeiculoId').value = '';
+            filtroVeiculoId = null;
+            paginaAtual = 1;
+            carregarDadosDashboard();
+        }
+
         async function carregarDadosDashboard() {
             try {
-                const response = await fetch('https://localhost:7085/api/OrdensReparacao', {
-                    method: 'GET',
-                    credentials: 'include'
+                const parametros = new URLSearchParams({
+                    pagina: paginaAtual,
+                    tamanhoPagina: 5
                 });
 
+                if (filtroVeiculoId) {
+                    parametros.append('veiculoId', filtroVeiculoId);
+                }
+
+                const response = await fetch(
+                    `https://localhost:7085/api/OrdensReparacao?${parametros.toString()}`,
+                    {
+                        method: 'GET',
+                        credentials: 'include'
+                    }
+                );
+
                 if (!response.ok) {
-                    console.warn("Aviso: A resposta da API não foi 200 OK.");
+                    console.warn('Não foi possível carregar as ordens.');
                     return;
                 }
 
-                const ordens = await response.json();
+                const dados = await response.json();
                 const tbody = document.getElementById('tabelaOrdens');
+
                 tbody.innerHTML = '';
 
-                let total = ordens.length;
-                let cur = 0;
-                let conc = 0;
+                if (dados.itens.length === 0) {
+                    tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 25px;">
+                        Não existem ordens para este veículo.
+                    </td>
+                </tr>
+            `;
+                }
 
-                ordens.forEach(ordem => {
-                    let id = ordem.id || ordem.Id || '';
-                    let clienteId = ordem.clienteId || ordem.ClienteId || 'N/A';
-                    let veiculoId = ordem.veiculoId || ordem.VeiculoId || 'N/A';
-                    let descricao = ordem.descricaoProblema || ordem.DescricaoProblema || 'Sem descrição';
-                    let valor = ordem.valorTotal !== undefined ? ordem.valorTotal : (ordem.ValorTotal !== undefined ? ordem.ValorTotal : 0);
-                    let estado = ordem.estado || ordem.Estado || 'Em Curso';
-
-                    let estadoClasse = 'pendente';
-                    if (estado === 'Em Curso' || estado === 'EmCurso') {
-                        cur++;
-                        estado = 'Em Curso';
-                        estadoClasse = 'curso';
-                    } else if (estado === 'Concluída' || estado === 'Concluida') {
-                        conc++;
-                        estado = 'Concluída';
-                        estadoClasse = 'concluida';
-                    }
+                dados.itens.forEach(ordem => {
+                    let estado = ordem.estado || 'Em Curso';
+                    let estadoClasse = estado === 'Em Curso' ? 'curso' : 'concluida';
 
                     const tr = document.createElement('tr');
+
                     tr.innerHTML = `
-                            <td><strong>#${id}</strong></td>
-                            <td>${clienteId}</td>
-                            <td>${veiculoId}</td>
-                            <td>${descricao}</td>
-                            <td><strong>${Number(valor).toFixed(2)} €</strong></td>
-                            <td><span class="badge ${estadoClasse}"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> ${estado}</span></td>
-                            <td><button class="btn-action" onclick="alert('Detalhes da Ordem #${id}')"><i class="fa-solid fa-eye"></i> Ver</button></td>
-                        `;
+                <td><strong>#${ordem.id}</strong></td>
+                <td>${ordem.clienteId}</td>
+                <td>${ordem.veiculoId}</td>
+                <td>${ordem.descricaoProblema}</td>
+                <td><strong>${Number(ordem.valorTotal).toFixed(2)} €</strong></td>
+                <td>
+                    <span class="badge ${estadoClasse}">
+                        <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
+                        ${estado}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn-action"
+                            onclick="alert('Detalhes da Ordem #${ordem.id}')">
+                        <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                </td>
+            `;
+
                     tbody.appendChild(tr);
                 });
 
-                document.getElementById('totalOrdens').textContent = total;
-                document.getElementById('emCurso').textContent = cur;
-                document.getElementById('concluidas').textContent = conc;
+                document.getElementById('totalOrdens').textContent = dados.totalOrdens;
+                document.getElementById('emCurso').textContent = dados.totalEmCurso;
+                document.getElementById('concluidas').textContent = dados.totalConcluidas;
+
+                paginaAtual = dados.paginaAtual;
+                totalPaginas = dados.totalPaginas;
+
+                document.getElementById('infoPagina').textContent =
+                    `Página ${paginaAtual} de ${totalPaginas} (${dados.totalItens} ordem(ns))`;
+
+                document.getElementById('btnPaginaAnterior').disabled = paginaAtual === 1;
+                document.getElementById('btnPaginaSeguinte').disabled =
+                    paginaAtual === totalPaginas;
 
             } catch (error) {
-                console.error("Erro de ligação:", error);
+                console.error('Erro de ligação:', error);
             }
         }
 

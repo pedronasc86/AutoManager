@@ -24,13 +24,61 @@ namespace WorkShop.API.Controllers
 
         // 1. GET: api/OrdensReparacao (Para a tabela principal do Dashboard)
         [HttpGet]
-        public async Task<IActionResult> ObterTodas()
+        public async Task<IActionResult> ObterTodas(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int tamanhoPagina = 5,
+            [FromQuery] int? veiculoId = null)
         {
-            var ordens = await _contexto.OrdensReparacao
-                .OrderByDescending(o => o.DataEntrada)
+            if (veiculoId.HasValue && veiculoId.Value <= 0)
+            {
+                return BadRequest(new
+                {
+                    mensagem = "O ID do veículo deve ser maior do que zero."
+                });
+            }
+
+            pagina = Math.Max(pagina, 1);
+            tamanhoPagina = Math.Clamp(tamanhoPagina, 1, 20);
+
+            // Estatísticas gerais: não mudam quando se filtra a tabela.
+            var totalOrdens = await _contexto.OrdensReparacao.CountAsync();
+            var totalEmCurso = await _contexto.OrdensReparacao
+                .CountAsync(o => o.Estado == "Em Curso");
+            var totalConcluidas = await _contexto.OrdensReparacao
+                .CountAsync(o => o.Estado == "Concluída");
+
+            // Consulta usada apenas pela tabela.
+            var query = _contexto.OrdensReparacao.AsNoTracking();
+
+            if (veiculoId.HasValue)
+            {
+                query = query.Where(o => o.VeiculoId == veiculoId.Value);
+            }
+
+            var totalItens = await query.CountAsync();
+
+            // Ordem crescente: #1, #2, #3, #4, #5...
+            var ordens = await query
+                .OrderBy(o => o.Id)
+                .Skip((pagina - 1) * tamanhoPagina)
+                .Take(tamanhoPagina)
                 .ToListAsync();
 
-            return Ok(ordens.Select(MapearParaRespostaDto));
+            var totalPaginas = Math.Max(
+                1,
+                (int)Math.Ceiling(totalItens / (double)tamanhoPagina)
+            );
+
+            return Ok(new RespostaPaginadaOrdensDto
+            {
+                Itens = ordens.Select(MapearParaRespostaDto).ToList(),
+                PaginaAtual = pagina,
+                TotalPaginas = totalPaginas,
+                TotalItens = totalItens,
+                TotalOrdens = totalOrdens,
+                TotalEmCurso = totalEmCurso,
+                TotalConcluidas = totalConcluidas
+            });
         }
 
         // 2. POST: api/OrdensReparacao (Compatível com /repair-order do enunciado RF8)
