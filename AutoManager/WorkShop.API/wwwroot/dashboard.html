@@ -496,6 +496,52 @@
             opacity: 0.45;
             cursor: not-allowed;
         }
+
+        .detalhes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .detalhe-descricao,
+        .detalhe-pecas,
+        .alterar-estado {
+            margin-top: 18px;
+        }
+
+            .detalhe-descricao p {
+                margin-top: 6px;
+                padding: 10px;
+                background: #f8fafc;
+                border-radius: 6px;
+            }
+
+        .peca-detalhe {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px;
+            margin-top: 7px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .alterar-estado select {
+            width: 100%;
+            margin-top: 7px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .mensagem-ordem.erro {
+            display: block;
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
     </style>
 </head>
 <body>
@@ -567,7 +613,8 @@
                     <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
                         <i class="fa-solid fa-filter"></i> Filtrar
                     </button>
-                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()"> Limpar
+                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                        Limpar
                     </button>
                 </div>
                 <table>
@@ -636,6 +683,49 @@
                 <button type="submit" class="btn-submit-modal">Registar Ordem (Validar Stock)</button>
                 <div id="mensagemOrdem" class="mensagem-ordem"></div>
             </form>
+        </div>
+    </div>
+
+    <div id="modalDetalhesOrdem" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloDetalheOrdem">Detalhes da Ordem</h3>
+                <button class="close-btn" onclick="fecharModalDetalhes()">&times;</button>
+            </div>
+
+            <div class="detalhes-grid">
+                <div><strong>Cliente:</strong> <span id="detalheCliente"></span></div>
+                <div><strong>Veículo:</strong> <span id="detalheVeiculo"></span></div>
+                <div><strong>Data de entrada:</strong> <span id="detalheDataEntrada"></span></div>
+                <div><strong>Data de conclusão:</strong> <span id="detalheDataConclusao"></span></div>
+                <div><strong>Mão de obra:</strong> <span id="detalheMaoDeObra"></span></div>
+                <div><strong>Peças:</strong> <span id="detalheCustoPecas"></span></div>
+                <div><strong>Total:</strong> <span id="detalheTotal"></span></div>
+            </div>
+
+            <div class="detalhe-descricao">
+                <strong>Descrição do problema</strong>
+                <p id="detalheDescricao"></p>
+            </div>
+
+            <div class="detalhe-pecas">
+                <strong>Peças aplicadas</strong>
+                <div id="listaPecasDetalhe"></div>
+            </div>
+
+            <div class="alterar-estado">
+                <label for="estadoOrdem">Estado da reparação</label>
+                <select id="estadoOrdem">
+                    <option value="Em Curso">Em Curso</option>
+                    <option value="Concluída">Concluída</option>
+                </select>
+
+                <button class="btn-submit-modal" onclick="alterarEstadoOrdem()">
+                    Guardar Estado
+                </button>
+            </div>
+
+            <div id="mensagemDetalheOrdem" class="mensagem-ordem"></div>
         </div>
     </div>
 
@@ -726,12 +816,12 @@
 
                 if (dados.itens.length === 0) {
                     tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 25px;">
-                        Não existem ordens para este veículo.
-                    </td>
-                </tr>
-            `;
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 25px;">
+                            Não existem ordens para este veículo.
+                        </td>
+                    </tr>
+                `;
                 }
 
                 dados.itens.forEach(ordem => {
@@ -741,24 +831,23 @@
                     const tr = document.createElement('tr');
 
                     tr.innerHTML = `
-                <td><strong>#${ordem.id}</strong></td>
-                <td>${ordem.clienteId}</td>
-                <td>${ordem.veiculoId}</td>
-                <td>${ordem.descricaoProblema}</td>
-                <td><strong>${Number(ordem.valorTotal).toFixed(2)} €</strong></td>
-                <td>
-                    <span class="badge ${estadoClasse}">
-                        <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
-                        ${estado}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn-action"
-                            onclick="alert('Detalhes da Ordem #${ordem.id}')">
+                    <td><strong>#${ordem.id}</strong></td>
+                    <td>${ordem.clienteId}</td>
+                    <td>${ordem.veiculoId}</td>
+                    <td>${ordem.descricaoProblema}</td>
+                    <td><strong>${Number(ordem.valorTotal).toFixed(2)} €</strong></td>
+                    <td>
+                        <span class="badge ${estadoClasse}">
+                            <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
+                            ${estado}
+                        </span>
+                    <td>
+                        <button class="btn-action"
+                            onclick="verDetalhesOrdem(${ordem.id})">
                         <i class="fa-solid fa-eye"></i> Ver
-                    </button>
-                </td>
-            `;
+                        </button>
+                    </td>
+                `;
 
                     tbody.appendChild(tr);
                 });
@@ -858,6 +947,126 @@
                 }
             } catch (error) {
                 console.error('Não foi possível carregar o nome do utilizador:', error);
+            }
+        }
+
+        let ordemDetalheAtual = null;
+
+        function formatarMoeda(valor) {
+            return `${Number(valor || 0).toFixed(2)} €`;
+        }
+
+        function formatarData(data) {
+            return data
+                ? new Date(data).toLocaleString('pt-PT')
+                : 'Ainda não concluída';
+        }
+
+        function fecharModalDetalhes() {
+            document.getElementById('modalDetalhesOrdem').style.display = 'none';
+        }
+
+        function preencherDetalhesOrdem(ordem) {
+            document.getElementById('tituloDetalheOrdem').textContent =
+                `Detalhes da Ordem #${ordem.id}`;
+
+            document.getElementById('detalheCliente').textContent = ordem.clienteId;
+            document.getElementById('detalheVeiculo').textContent = `#${ordem.veiculoId}`;
+            document.getElementById('detalheDataEntrada').textContent =
+                formatarData(ordem.dataEntrada);
+            document.getElementById('detalheDataConclusao').textContent =
+                formatarData(ordem.dataConclusao);
+            document.getElementById('detalheMaoDeObra').textContent =
+                formatarMoeda(ordem.custoMaoDeObra);
+            document.getElementById('detalheCustoPecas').textContent =
+                formatarMoeda(ordem.custoPecas);
+            document.getElementById('detalheTotal').textContent =
+                formatarMoeda(ordem.valorTotal);
+            document.getElementById('detalheDescricao').textContent =
+                ordem.descricaoProblema;
+
+            document.getElementById('estadoOrdem').value = ordem.estado;
+
+            const listaPecas = document.getElementById('listaPecasDetalhe');
+
+            if (!ordem.pecas || ordem.pecas.length === 0) {
+                listaPecas.innerHTML = '<p>Sem peças registadas nesta ordem.</p>';
+                return;
+            }
+
+            listaPecas.innerHTML = ordem.pecas.map(peca => `
+        <div class="peca-detalhe">
+            <span>${peca.pecaId}</span>
+            <span>${peca.quantidade} un. × ${formatarMoeda(peca.precoUnitario)}</span>
+            <strong>${formatarMoeda(peca.subtotal)}</strong>
+        </div>
+    `).join('');
+        }
+
+        async function verDetalhesOrdem(id) {
+            try {
+                const response = await fetch(
+                    `https://localhost:7085/api/OrdensReparacao/${id}`,
+                    {
+                        method: 'GET',
+                        credentials: 'include'
+                    }
+                );
+
+                if (!response.ok) {
+                    alert('Não foi possível obter os detalhes da ordem.');
+                    return;
+                }
+
+                ordemDetalheAtual = await response.json();
+                preencherDetalhesOrdem(ordemDetalheAtual);
+
+                document.getElementById('modalDetalhesOrdem').style.display = 'flex';
+            } catch (error) {
+                console.error(error);
+                alert('Erro de comunicação ao carregar os detalhes.');
+            }
+        }
+
+        async function alterarEstadoOrdem() {
+            if (!ordemDetalheAtual) return;
+
+            const estado = document.getElementById('estadoOrdem').value;
+            const mensagem = document.getElementById('mensagemDetalheOrdem');
+
+            try {
+                const response = await fetch(
+                    `https://localhost:7085/api/OrdensReparacao/${ordemDetalheAtual.id}`,
+                    {
+                        method: 'PUT',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ estado })
+                    }
+                );
+
+                const dados = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    mensagem.textContent =
+                        dados.mensagem || 'Não foi possível alterar o estado.';
+                    mensagem.className = 'mensagem-ordem erro';
+                    return;
+                }
+
+                ordemDetalheAtual = { ...ordemDetalheAtual, ...dados };
+                preencherDetalhesOrdem(ordemDetalheAtual);
+
+                mensagem.textContent = 'Estado atualizado com sucesso.';
+                mensagem.className = 'mensagem-ordem sucesso';
+
+                carregarDadosDashboard();
+            } catch (error) {
+                console.error(error);
+                mensagem.textContent = 'Erro de comunicação ao atualizar o estado.';
+                mensagem.className = 'mensagem-ordem erro';
             }
         }
 

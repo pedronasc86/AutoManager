@@ -109,6 +109,8 @@ namespace WorkShop.API.Controllers
 
             decimal totalCustoPecas = 0;
 
+            var pecasDaOrdem = new List<PecaAplicadaOrdem>();
+
             if (dto.Pecas != null && dto.Pecas.Count > 0)
             {
                 foreach (var itemPeca in dto.Pecas)
@@ -125,6 +127,13 @@ namespace WorkShop.API.Controllers
                     }
 
                     totalCustoPecas += resultadoPeca.PrecoUnitario * itemPeca.Quantidade;
+
+                    pecasDaOrdem.Add(new PecaAplicadaOrdem
+                    {
+                        PecaId = Guid.Parse(itemPeca.PecaId),
+                        Quantidade = itemPeca.Quantidade,
+                        PrecoUnitario = resultadoPeca.PrecoUnitario
+                    });
                 }
             }
 
@@ -136,7 +145,8 @@ namespace WorkShop.API.Controllers
                 DataEntrada = DateTime.UtcNow,
                 Estado = "Em Curso",
                 CustoMaoDeObra = dto.CustoMaoDeObra,
-                CustoPecas = totalCustoPecas
+                CustoPecas = totalCustoPecas,
+                Pecas = pecasDaOrdem
             };
 
             _contexto.OrdensReparacao.Add(ordem);
@@ -149,14 +159,21 @@ namespace WorkShop.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> ObterPorId(int id)
         {
-            var ordem = await _contexto.OrdensReparacao.FindAsync(id);
-            if (ordem == null) return NotFound();
+            var ordem = await _contexto.OrdensReparacao
+                .Include(o => o.Pecas)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
-            return Ok(MapearParaRespostaDto(ordem));
+            if (ordem == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(MapearParaDetalheDto(ordem));
         }
 
         // 4. PUT: api/OrdensReparacao/{id}
         [HttpPut("{id}")]
+        [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
         public async Task<IActionResult> AtualizarOrdem(int id, [FromBody] AtualizarOrdemReparacaoDto dto)
         {
             var ordem = await _contexto.OrdensReparacao.FindAsync(id);
@@ -165,17 +182,31 @@ namespace WorkShop.API.Controllers
                 return NotFound(new { mensagem = $"Ordem de reparação #{id} não encontrada." });
             }
 
-            if (!string.IsNullOrEmpty(dto.Estado))
+            if (!string.IsNullOrWhiteSpace(dto.Estado))
             {
-                ordem.Estado = dto.Estado;
-                if (dto.Estado.Equals("Concluída", StringComparison.OrdinalIgnoreCase))
+                if (dto.Estado != "Em Curso" && dto.Estado != "Concluída")
                 {
-                    ordem.DataConclusao = DateTime.UtcNow;
+                    return BadRequest(new
+                    {
+                        mensagem = "O estado deve ser 'Em Curso' ou 'Concluída'."
+                    });
                 }
+
+                ordem.Estado = dto.Estado;
+                ordem.DataConclusao = dto.Estado == "Concluída"
+                    ? DateTime.UtcNow
+                    : null;
             }
 
-            ordem.CustoMaoDeObra = dto.CustoMaoDeObra;
-            ordem.CustoPecas = dto.CustoPecas;
+            if (dto.CustoMaoDeObra.HasValue)
+            {
+                ordem.CustoMaoDeObra = dto.CustoMaoDeObra.Value;
+            }
+
+            if (dto.CustoPecas.HasValue)
+            {
+                ordem.CustoPecas = dto.CustoPecas.Value;
+            }
 
             await _contexto.SaveChangesAsync();
             return Ok(MapearParaRespostaDto(ordem));
@@ -232,6 +263,28 @@ namespace WorkShop.API.Controllers
                 ValorTotal = ordem.ValorTotal,
                 VeiculoId = ordem.VeiculoId,
                 ClienteId = ordem.ClienteId
+            };
+        }
+        private static DetalheOrdemReparacaoDto MapearParaDetalheDto(OrdemReparacao ordem)
+        {
+            return new DetalheOrdemReparacaoDto
+            {
+                Id = ordem.Id,
+                DataEntrada = ordem.DataEntrada,
+                DataConclusao = ordem.DataConclusao,
+                DescricaoProblema = ordem.DescricaoProblema,
+                Estado = ordem.Estado,
+                CustoMaoDeObra = ordem.CustoMaoDeObra,
+                CustoPecas = ordem.CustoPecas,
+                ValorTotal = ordem.ValorTotal,
+                VeiculoId = ordem.VeiculoId,
+                ClienteId = ordem.ClienteId,
+                Pecas = ordem.Pecas.Select(p => new PecaAplicadaRespostaDto
+                {
+                    PecaId = p.PecaId,
+                    Quantidade = p.Quantidade,
+                    PrecoUnitario = p.PrecoUnitario
+                }).ToList()
             };
         }
     }
