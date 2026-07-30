@@ -11,6 +11,7 @@ namespace WorkShop.API.Data
 
         public DbSet<Veiculo> Veiculos { get; set; }
         public DbSet<OrdemReparacao> OrdensReparacao { get; set; }
+        public DbSet<PecaAplicadaOrdem> PecasAplicadasOrdem { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,6 +21,12 @@ namespace WorkShop.API.Data
                 .HasMany(v => v.OrdensReparacao)
                 .WithOne(o => o.Veiculo)
                 .HasForeignKey(o => o.VeiculoId);
+
+            modelBuilder.Entity<OrdemReparacao>()
+                .HasMany(o => o.Pecas)
+                .WithOne(p => p.OrdemReparacao)
+                .HasForeignKey(p => p.OrdemReparacaoId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

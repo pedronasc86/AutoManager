@@ -45,7 +45,7 @@ namespace WorkShop.API
                         }
                     };
             });
-            builder.Services.AddCatalogHttpClient(builder.Configuration);
+            
 
             builder.Services.AddAuthorization();
 
@@ -55,7 +55,7 @@ namespace WorkShop.API
             // Regista o HttpClient apontando para o URL da PartsCatalog.API
             builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
             {
-                client.BaseAddress = new Uri("https://localhost:5039/"); // URL onde a PartsCatalog.API corre
+                client.BaseAddress = new Uri("http://localhost:5039/"); // URL onde a PartsCatalog.API corre
             });
 
             // CORS corrigido para permitir o dashboard (qualquer origem local ou desenvolvimento)
