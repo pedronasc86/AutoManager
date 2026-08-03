@@ -1,20 +1,11 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
-    // Gestão do Token na URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
+﻿const urlParams = new URLSearchParams(window.location.search);
+const tokenFromUrl = urlParams.get('token');
 
-    if (tokenFromUrl) {
-        localStorage.setItem('jwtToken', tokenFromUrl);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // Inicialização da página
-    carregarDadosDashboard();
-    carregarNomeUtilizador();
-});
+if (tokenFromUrl) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
 
 function terminarSessao() {
-    localStorage.removeItem('jwtToken');
     window.location.href = 'https://localhost:7194/login.html';
 }
 
@@ -26,75 +17,130 @@ function fecharModalNovaOrdem() {
     document.getElementById('modalNovaOrdem').style.display = 'none';
 }
 
+let paginaAtual = 1;
+let totalPaginas = 1;
+let filtroVeiculoId = null;
+
+function mudarPagina(direcao) {
+    const novaPagina = paginaAtual + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginas) {
+        return;
+    }
+
+    paginaAtual = novaPagina;
+    carregarDadosDashboard();
+}
+
+function aplicarFiltroVeiculo() {
+    const valor = document.getElementById('filtroVeiculoId').value;
+
+    if (!valor || Number(valor) <= 0) {
+        alert('Introduz um ID de veículo válido.');
+        return;
+    }
+
+    filtroVeiculoId = Number(valor);
+    paginaAtual = 1;
+    carregarDadosDashboard();
+}
+
+function limparFiltroVeiculo() {
+    document.getElementById('filtroVeiculoId').value = '';
+    filtroVeiculoId = null;
+    paginaAtual = 1;
+    carregarDadosDashboard();
+}
+
 async function carregarDadosDashboard() {
     try {
-        const token = localStorage.getItem('jwtToken');
-        const response = await fetch('https://localhost:7085/api/OrdensReparacao', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            credentials: 'include'
+        const parametros = new URLSearchParams({
+            pagina: paginaAtual,
+            tamanhoPagina: 5
         });
 
+        if (filtroVeiculoId) {
+            parametros.append('veiculoId', filtroVeiculoId);
+        }
+
+        const response = await fetch(
+            `https://localhost:7085/api/OrdensReparacao?${parametros.toString()}`,
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
         if (!response.ok) {
-            console.warn("Aviso: A resposta da API não foi 200 OK.");
+            console.warn('Não foi possível carregar as ordens.');
             return;
         }
 
-        const ordens = await response.json();
+        const dados = await response.json();
         const tbody = document.getElementById('tabelaOrdens');
+
         tbody.innerHTML = '';
 
-        let total = ordens.length;
-        let cur = 0;
-        let conc = 0;
+        if (dados.itens.length === 0) {
+            tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 25px;">
+                    Não existem ordens para este veículo.
+                </td>
+            </tr>
+        `;
+        }
 
-        ordens.forEach(ordem => {
-            let id = ordem.id || ordem.Id || '';
-            let clienteId = ordem.clienteId || ordem.ClienteId || 'N/A';
-            let veiculoId = ordem.veiculoId || ordem.VeiculoId || 'N/A';
-            let descricao = ordem.descricaoProblema || ordem.DescricaoProblema || 'Sem descrição';
-            let valor = ordem.valorTotal !== undefined ? ordem.valorTotal : (ordem.ValorTotal !== undefined ? ordem.ValorTotal : 0);
-            let estado = ordem.estado || ordem.Estado || 'Em Curso';
-
-            let estadoClasse = 'pendente';
-            if (estado === 'Em Curso' || estado === 'EmCurso') {
-                cur++;
-                estado = 'Em Curso';
-                estadoClasse = 'curso';
-            } else if (estado === 'Concluída' || estado === 'Concluida') {
-                conc++;
-                estado = 'Concluída';
-                estadoClasse = 'concluida';
-            }
+        dados.itens.forEach(ordem => {
+            let estado = ordem.estado || 'Em Curso';
+            let estadoClasse = estado === 'Em Curso' ? 'curso' : 'concluida';
 
             const tr = document.createElement('tr');
+
             tr.innerHTML = `
-                <td><strong>#${id}</strong></td>
-                <td>${clienteId}</td>
-                <td>${veiculoId}</td>
-                <td>${descricao}</td>
-                <td><strong>${Number(valor).toFixed(2)} €</strong></td>
-                <td><span class="badge ${estadoClasse}"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> ${estado}</span></td>
-                <td><button class="btn-action" onclick="alert('Detalhes da Ordem #${id}')"><i class="fa-solid fa-eye"></i> Ver</button></td>
-            `;
+            <td><strong>#${ordem.id}</strong></td>
+            <td>${ordem.clienteId}</td>
+            <td>${ordem.veiculoId}</td>
+            <td>${ordem.descricaoProblema}</td>
+            <td><strong>${Number(ordem.valorTotal).toFixed(2)} €</strong></td>
+            <td>
+                <span class="badge ${estadoClasse}">
+                    <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
+                    ${estado}
+                </span>
+            <td>
+                <button class="btn-action"
+                    onclick="verDetalhesOrdem(${ordem.id})">
+                <i class="fa-solid fa-eye"></i> Ver
+                </button>
+            </td>
+        `;
+
             tbody.appendChild(tr);
         });
 
-        document.getElementById('totalOrdens').textContent = total;
-        document.getElementById('emCurso').textContent = cur;
-        document.getElementById('concluidas').textContent = conc;
+        document.getElementById('totalOrdens').textContent = dados.totalOrdens;
+        document.getElementById('emCurso').textContent = dados.totalEmCurso;
+        document.getElementById('concluidas').textContent = dados.totalConcluidas;
+
+        paginaAtual = dados.paginaAtual;
+        totalPaginas = dados.totalPaginas;
+
+        document.getElementById('infoPagina').textContent =
+            `Página ${paginaAtual} de ${totalPaginas} (${dados.totalItens} ordem(ns))`;
+
+        document.getElementById('btnPaginaAnterior').disabled = paginaAtual === 1;
+        document.getElementById('btnPaginaSeguinte').disabled =
+            paginaAtual === totalPaginas;
 
     } catch (error) {
-        console.error("Erro de ligação:", error);
+        console.error('Erro de ligação:', error);
     }
 }
 
 async function criarOrdemReparacao(e) {
     e.preventDefault();
 
-    const token = localStorage.getItem('jwtToken');
     const pecaIdVal = document.getElementById('pecaIdInput').value;
     const qtdVal = parseInt(document.getElementById('quantidadePecaInput').value) || 0;
 
@@ -115,19 +161,32 @@ async function criarOrdemReparacao(e) {
     };
 
     try {
+        // Compatível com o endpoint /repair-order do RF8
         const response = await fetch('https://localhost:7085/api/OrdensReparacao/repair-order', {
             method: 'POST',
+            credentials: 'include',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(novaOrdem)
         });
 
         if (response.ok) {
-            alert('Ordem de reparação criada com sucesso!');
-            fecharModalNovaOrdem();
-            carregarDadosDashboard();
+            const mensagem = document.getElementById('mensagemOrdem');
+
+            mensagem.textContent = 'Ordem de reparação criada com sucesso!';
+            mensagem.className = 'mensagem-ordem sucesso';
+
+            setTimeout(() => {
+                fecharModalNovaOrdem();
+
+                document.getElementById('formNovaOrdem').reset();
+
+                mensagem.textContent = '';
+                mensagem.className = 'mensagem-ordem';
+
+                carregarDadosDashboard();
+            }, 3000);
         } else {
             const errData = await response.json().catch(() => ({}));
             alert('Erro ao criar ordem: ' + (errData.mensagem || errData.message || 'Verifique o stock ou os dados inseridos.'));
@@ -140,12 +199,8 @@ async function criarOrdemReparacao(e) {
 
 async function carregarNomeUtilizador() {
     try {
-        const token = localStorage.getItem('jwtToken');
         const response = await fetch('https://localhost:7194/api/Auth/me', {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
             credentials: 'include'
         });
 
@@ -154,9 +209,133 @@ async function carregarNomeUtilizador() {
         const data = await response.json();
 
         if (data.firstName) {
-            document.getElementById('welcomeMessage').textContent = `Bem-vindo, ${data.firstName}!`;
+            document.getElementById('welcomeMessage').textContent =
+                `Bem-vindo, ${data.firstName}!`;
         }
     } catch (error) {
         console.error('Não foi possível carregar o nome do utilizador:', error);
     }
 }
+
+let ordemDetalheAtual = null;
+
+function formatarMoeda(valor) {
+    return `${Number(valor || 0).toFixed(2)} €`;
+}
+
+function formatarData(data) {
+    return data
+        ? new Date(data).toLocaleString('pt-PT')
+        : 'Ainda não concluída';
+}
+
+function fecharModalDetalhes() {
+    document.getElementById('modalDetalhesOrdem').style.display = 'none';
+}
+
+function preencherDetalhesOrdem(ordem) {
+    document.getElementById('tituloDetalheOrdem').textContent =
+        `Detalhes da Ordem #${ordem.id}`;
+
+    document.getElementById('detalheCliente').textContent = ordem.clienteId;
+    document.getElementById('detalheVeiculo').textContent = `#${ordem.veiculoId}`;
+    document.getElementById('detalheDataEntrada').textContent =
+        formatarData(ordem.dataEntrada);
+    document.getElementById('detalheDataConclusao').textContent =
+        formatarData(ordem.dataConclusao);
+    document.getElementById('detalheMaoDeObra').textContent =
+        formatarMoeda(ordem.custoMaoDeObra);
+    document.getElementById('detalheCustoPecas').textContent =
+        formatarMoeda(ordem.custoPecas);
+    document.getElementById('detalheTotal').textContent =
+        formatarMoeda(ordem.valorTotal);
+    document.getElementById('detalheDescricao').textContent =
+        ordem.descricaoProblema;
+
+    document.getElementById('estadoOrdem').value = ordem.estado;
+
+    const listaPecas = document.getElementById('listaPecasDetalhe');
+
+    if (!ordem.pecas || ordem.pecas.length === 0) {
+        listaPecas.innerHTML = '<p>Sem peças registadas nesta ordem.</p>';
+        return;
+    }
+
+    listaPecas.innerHTML = ordem.pecas.map(peca => `
+<div class="peca-detalhe">
+    <span>${peca.pecaId}</span>
+    <span>${peca.quantidade} un. × ${formatarMoeda(peca.precoUnitario)}</span>
+    <strong>${formatarMoeda(peca.subtotal)}</strong>
+</div>
+`).join('');
+}
+
+async function verDetalhesOrdem(id) {
+    try {
+        const response = await fetch(
+            `https://localhost:7085/api/OrdensReparacao/${id}`,
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            alert('Não foi possível obter os detalhes da ordem.');
+            return;
+        }
+
+        ordemDetalheAtual = await response.json();
+        preencherDetalhesOrdem(ordemDetalheAtual);
+
+        document.getElementById('modalDetalhesOrdem').style.display = 'flex';
+    } catch (error) {
+        console.error(error);
+        alert('Erro de comunicação ao carregar os detalhes.');
+    }
+}
+
+async function alterarEstadoOrdem() {
+    if (!ordemDetalheAtual) return;
+
+    const estado = document.getElementById('estadoOrdem').value;
+    const mensagem = document.getElementById('mensagemDetalheOrdem');
+
+    try {
+        const response = await fetch(
+            `https://localhost:7085/api/OrdensReparacao/${ordemDetalheAtual.id}`,
+            {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estado })
+            }
+        );
+
+        const dados = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            mensagem.textContent =
+                dados.mensagem || 'Não foi possível alterar o estado.';
+            mensagem.className = 'mensagem-ordem erro';
+            return;
+        }
+
+        ordemDetalheAtual = { ...ordemDetalheAtual, ...dados };
+        preencherDetalhesOrdem(ordemDetalheAtual);
+
+        mensagem.textContent = 'Estado atualizado com sucesso.';
+        mensagem.className = 'mensagem-ordem sucesso';
+
+        carregarDadosDashboard();
+    } catch (error) {
+        console.error(error);
+        mensagem.textContent = 'Erro de comunicação ao atualizar o estado.';
+        mensagem.className = 'mensagem-ordem erro';
+    }
+}
+
+carregarDadosDashboard();
+carregarNomeUtilizador();
