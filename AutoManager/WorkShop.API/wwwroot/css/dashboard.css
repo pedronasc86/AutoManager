@@ -257,6 +257,13 @@ header {
         color: var(--text-primary);
     }
 
+.table-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
 .btn-new {
     background-color: var(--accent-blue);
     color: white;
@@ -425,3 +432,101 @@ tr {
     .btn-submit-modal:hover {
         background: #059669;
     }
+
+.mensagem-ordem {
+    display: none;
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+    .mensagem-ordem.sucesso {
+        display: block;
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+    }
+
+/* Botões de Paginação na tabela das ordens de reparação*/
+.btn-filter,
+.btn-clear-filter,
+.btn-pagina {
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-secondary);
+    padding: 9px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+    .btn-filter:hover,
+    .btn-clear-filter:hover,
+    .btn-pagina:hover:not(:disabled) {
+        color: var(--accent-blue);
+        border-color: var(--accent-blue);
+    }
+
+.paginacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.btn-pagina:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.detalhes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.detalhe-descricao,
+.detalhe-pecas,
+.alterar-estado {
+    margin-top: 18px;
+}
+
+    .detalhe-descricao p {
+        margin-top: 6px;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 6px;
+    }
+
+.peca-detalhe {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px;
+    margin-top: 7px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.alterar-estado select {
+    width: 100%;
+    margin-top: 7px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.mensagem-ordem.erro {
+    display: block;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
