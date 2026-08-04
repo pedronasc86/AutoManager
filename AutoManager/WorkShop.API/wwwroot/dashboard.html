@@ -31,6 +31,12 @@
                     </a>
                 </li>
 
+                <li data-section="pecas">
+                    <a href="#" onclick="mostrarSecao('pecas'); return false;">
+                        <i class="fa-solid fa-screwdriver-wrench"></i> Peças
+                    </a>
+                </li>
+
                 <li data-section="veiculos">
                     <a href="#" onclick="mostrarSecao('veiculos'); return false;">
                         <i class="fa-solid fa-car"></i> Veículos
@@ -147,6 +153,27 @@
                         </tr>
                     </thead>
                     <tbody id="tabelaVeiculos"></tbody>
+                </table>
+            </section>
+
+            <section id="secaoPecas" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Peças</h2>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Referência</th>
+                            <th>Nome</th>
+                            <th>Categoria</th>
+                            <th>Compatibilidade</th>
+                            <th>Preço Unitário</th>
+                            <th>Stock</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaPecas"></tbody>
                 </table>
             </section>
 

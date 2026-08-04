@@ -20,6 +20,7 @@ function fecharModalNovaOrdem() {
 const titulosSecoes = {
     dashboard: 'Painel Geral da Oficina',
     ordens: 'Ordens de Reparação',
+    pecas: 'Catálogo de Peças',
     veiculos: 'Veículos',
     clientes: 'Clientes'
 };
@@ -27,6 +28,10 @@ const titulosSecoes = {
 function mostrarSecao(secao) {
     const mostrarDashboard = secao === 'dashboard';
     const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
+
+    document.getElementById('secaoPecas')
+        .classList.toggle('view-hidden', secao !== 'pecas');
+
 
     document.getElementById('btnNovaOrdem')
         .classList.toggle('view-hidden', secao !== 'ordens');
@@ -53,8 +58,64 @@ function mostrarSecao(secao) {
         carregarDadosDashboard();
     } else if (secao === 'veiculos') {
         carregarVeiculos();
+    } else if (secao === 'pecas') {
+        carregarPecas();
     } else if (secao === 'clientes') {
         carregarClientes();
+    }
+}
+
+async function carregarPecas() {
+    const tabela = document.getElementById('tabelaPecas');
+    tabela.innerHTML = '';
+
+    try {
+        const response = await fetch(
+            'https://localhost:7085/api/Catalogo/pecas',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar as peças.');
+        }
+
+        const pecas = await response.json();
+
+        if (pecas.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaPecas',
+                7,
+                'Não existem peças registadas.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = pecas.map(peca => `
+            <tr>
+                <td>${escaparHtml(peca.referenciaPeca)}</td>
+                <td>${escaparHtml(peca.nome)}</td>
+                <td>${escaparHtml(peca.categoria)}</td>
+                <td>${escaparHtml(peca.compatibilidade)}</td>
+                <td><strong>${Number(peca.precoUnitario).toFixed(2)} €</strong></td>
+                <td>${peca.stockDisponivel}</td>
+                <td>
+                    <span class="badge ${peca.ativo ? 'concluida' : 'pendente'}">
+                        ${peca.ativo ? 'Ativa' : 'Inativa'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+
+        mostrarTabelaVazia(
+            'tabelaPecas',
+            7,
+            'Erro ao carregar as peças.'
+        );
     }
 }
 

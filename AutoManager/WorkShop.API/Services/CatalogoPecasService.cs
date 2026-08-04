@@ -9,6 +9,8 @@ namespace WorkShop.API.Services
     public interface ICatalogoPecasService
     {
         Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada);
+
+        Task<List<RespostaPecaCatalogoDto>> ObterPecasAsync();
     }
 
     public class CatalogoPecasService : ICatalogoPecasService
@@ -18,6 +20,22 @@ namespace WorkShop.API.Services
         public CatalogoPecasService(HttpClient httpClient)
         {
             _httpClient = httpClient;
+        }
+
+        public async Task<List<RespostaPecaCatalogoDto>> ObterPecasAsync()
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<RespostaPecaCatalogoDto>>("api/pecas")
+                    ?? new List<RespostaPecaCatalogoDto>();
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException(
+                    "Não foi possível contactar a PartsCatalog.API.",
+                    ex
+                );
+            }
         }
 
         public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)> VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
