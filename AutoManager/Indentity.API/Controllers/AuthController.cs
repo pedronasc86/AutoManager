@@ -1,10 +1,11 @@
 ﻿using Identity.API.DTOs;
 using Identity.API.Services;
 using Indentity.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Identity.API.Controllers
 {
@@ -148,9 +149,12 @@ namespace Identity.API.Controllers
                 return Unauthorized();
             }
 
+            var roles = await _userManager.GetRolesAsync(user);
+
             return Ok(new CurrentUserDto
             {
-                FirstName = user.name ?? string.Empty
+                FirstName = user.name ?? string.Empty,
+                Role = roles.FirstOrDefault() ?? string.Empty
             });
         }
 

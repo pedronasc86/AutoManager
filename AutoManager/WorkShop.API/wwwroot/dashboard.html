@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoManager - Painel da Oficina</title>
-    <!-- Importação de fontes e ícones modernos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
 
-    <!-- MENU LATERAL -->
     <aside>
         <div>
             <div class="logo-area">
@@ -31,9 +29,15 @@
                     </a>
                 </li>
 
+                <li data-section="meus-veiculos">
+                    <a href="#" onclick="mostrarSecao('meus-veiculos'); return false;">
+                        <i class="fa-solid fa-car-side"></i> Meus Veículos
+                    </a>
+                </li>
+
                 <li data-section="veiculos">
                     <a href="#" onclick="mostrarSecao('veiculos'); return false;">
-                        <i class="fa-solid fa-car"></i> Veículos
+                        <i class="fa-solid fa-car"></i> Veículos (Geral)
                     </a>
                 </li>
 
@@ -47,7 +51,6 @@
         <button class="logout-btn" onclick="terminarSessao()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Terminar Sessão</button>
     </aside>
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main>
         <header>
             <h1 id="tituloPagina">Painel Geral da Oficina</h1>
@@ -58,7 +61,6 @@
         </header>
 
         <div class="content">
-            <!-- CARDS DE ESTATÍSTICA -->
             <div id="dashboardCards" class="cards-grid">
                 <div class="card total">
                     <div class="card-info">
@@ -83,7 +85,6 @@
                 </div>
             </div>
 
-            <!-- TABELA DE DADOS REAIS -->
             <section id="secaoOrdens" class="table-section">
                 <div class="table-header">
                     <h2>Ordens de Reparação</h2>
@@ -115,7 +116,6 @@
                         </tr>
                     </thead>
                     <tbody id="tabelaOrdens">
-                        <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
                 <div class="paginacao">
@@ -130,6 +130,30 @@
                     </button>
                 </div>
             </section>
+
+            <section id="secaoMeusVeiculos" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Os Meus Veículos</h2>
+                    <button class="btn-new" onclick="abrirModalVeiculo()">
+                        <i class="fa-solid fa-plus"></i> Adicionar Novo Carro
+                    </button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Matrícula</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Ano</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMeusVeiculos">
+                    </tbody>
+                </table>
+            </section>
+
             <section id="secaoVeiculos" class="table-section view-hidden">
                 <div class="table-header">
                     <h2>Veículos</h2>
@@ -170,7 +194,6 @@
         </div>
     </main>
 
-    <!-- MODAL PARA CRIAR NOVA ORDEM -->
     <div id="modalNovaOrdem" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -202,8 +225,38 @@
                     <label for="descricaoInput">Descrição do Problema</label>
                     <textarea id="descricaoInput" rows="3" required placeholder="Descreva a reparação necessária..."></textarea>
                 </div>
-                <button type="submit" class="btn-submit-modal">Registar Ordem (Validar Stock)</button>
+                <button type="submit" class="btn-submit-modal">Registar Ordem (Pendente)</button>
                 <div id="mensagemOrdem" class="mensagem-ordem"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalNovoVeiculo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Novo Carro</h3>
+                <button class="close-btn" onclick="fecharModalVeiculo()">&times;</button>
+            </div>
+            <form id="formNovoVeiculo" onsubmit="registarVeiculo(event)">
+                <div class="form-group">
+                    <label for="matriculaInput">Matrícula</label>
+                    <input type="text" id="matriculaInput" required placeholder="Ex: 00-AA-00">
+                </div>
+                <div class="form-group">
+                    <label for="marcaInput">Marca</label>
+                    <input type="text" id="marcaInput" required placeholder="Ex: Renault">
+                </div>
+                <div class="form-group">
+                    <label for="modeloInput">Modelo</label>
+                    <input type="text" id="modeloInput" required placeholder="Ex: Clio">
+                </div>
+                <div class="form-group">
+                    <label for="anoInput">Ano</label>
+                    <input type="number" id="anoInput" required placeholder="Ex: 2020">
+                </div>
+
+                <button type="submit" class="btn-submit-modal">Guardar Veículo</button>
+                <div id="mensagemVeiculo" class="mensagem-ordem"></div>
             </form>
         </div>
     </div>
@@ -251,7 +304,6 @@
         </div>
     </div>
 
-    <!-- SCRIPT EXTERNO -->
     <script src="js/dashboard.js"></script>
 </body>
 </html>
