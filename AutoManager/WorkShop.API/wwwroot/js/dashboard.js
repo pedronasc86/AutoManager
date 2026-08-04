@@ -28,6 +28,9 @@ function mostrarSecao(secao) {
     const mostrarDashboard = secao === 'dashboard';
     const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
 
+    document.getElementById('btnNovaOrdem')
+        .classList.toggle('view-hidden', secao !== 'ordens');
+
     document.getElementById('tituloPagina').textContent = titulosSecoes[secao];
 
     document.getElementById('dashboardCards')
