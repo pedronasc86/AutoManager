@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using PartsCatalog.API.DTOs;
 using PartsCatalog.API.Models;
 using PartsCatalog.API.Repositories;
+using PartsCatalog.API.Services;
 
 namespace PartsCatalog.API.Controllers
 {
@@ -13,24 +15,24 @@ namespace PartsCatalog.API.Controllers
     public class PecasController : ControllerBase
     {
         private readonly IPecaRepository _repository;
-        private readonly IMapper _mapper; // ⬅️ Injeção do AutoMapper
+        private readonly IPecaService _pecaService;
+        private readonly IMapper _mapper;
 
-        public PecasController(IPecaRepository repository, IMapper mapper)
+        public PecasController(IPecaRepository repository, IPecaService pecaService, IMapper mapper)
         {
             _repository = repository;
+            _pecaService = pecaService;
             _mapper = mapper;
         }
 
-        // GET: api/pecas
+        // GET: api/pecas (Filtros, Pesquisa e Ordenação OData)
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<PecaResponse>>> ObterTodas()
+        [EnableQuery]
+        public IActionResult ObterTodasOData()
         {
-            var pecas = await _repository.ObterTodasAsync();
-
-            var response = _mapper.Map<IEnumerable<PecaResponse>>(pecas);
-
-            return Ok(response);
+            var query = _pecaService.GetPartsQuery();
+            return Ok(query);
         }
 
         // GET: api/pecas/{id}
@@ -52,7 +54,6 @@ namespace PartsCatalog.API.Controllers
         [HttpPost]
         public async Task<ActionResult<PecaResponse>> Criar([FromBody] CriarPecaRequest request)
         {
-            // Mapeia a request para a entidade Peca
             var novaPeca = _mapper.Map<Peca>(request);
 
             novaPeca.Id = Guid.NewGuid();
@@ -74,7 +75,6 @@ namespace PartsCatalog.API.Controllers
             if (peca == null)
                 return NotFound("Peça não encontrada.");
 
-            // Copia os valores do request diretamente para a peça existente na base de dados
             _mapper.Map(request, peca);
 
             await _repository.AtualizarAsync(peca);
@@ -95,16 +95,16 @@ namespace PartsCatalog.API.Controllers
             return NoContent();
         }
 
-        // Endpoint privado (apenas Mecânico/Gestor) para inativação de peças
+        // PATCH: api/pecas/{id}/inativar
         [HttpPatch("{id:guid}/inativar")]
-        [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")] 
+        [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
         public async Task<IActionResult> InativarPeca(Guid id)
         {
             var sucesso = await _repository.InativarAsync(id);
             if (!sucesso)
                 return NotFound("Peça não encontrada.");
 
-            return NoContent(); 
+            return NoContent();
         }
 
         // GET: api/pecas/{id}/disponibilidade?quantidade=2
