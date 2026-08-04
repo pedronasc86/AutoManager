@@ -4,6 +4,7 @@ using Indentity.API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.API.Controllers
 {
@@ -151,6 +152,36 @@ namespace Identity.API.Controllers
             {
                 FirstName = user.name ?? string.Empty
             });
+        }
+
+    [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
+    [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userManager.Users
+                .AsNoTracking()
+                .OrderBy(user => user.name)
+                .ThenBy(user => user.Email)
+                .ToListAsync();
+
+            var response = new List<UserListItemDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+
+                response.Add(new UserListItemDto
+                {
+                    Id = user.Id,
+                    FirstName = string.IsNullOrWhiteSpace(user.name)
+                        ? user.Email ?? string.Empty
+                        : user.name,
+                    Email = user.Email ?? string.Empty,
+                    Role = string.Join(", ", roles)
+                });
+            }
+
+            return Ok(response);
         }
     }
 }

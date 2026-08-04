@@ -17,6 +17,150 @@ function fecharModalNovaOrdem() {
     document.getElementById('modalNovaOrdem').style.display = 'none';
 }
 
+const titulosSecoes = {
+    dashboard: 'Painel Geral da Oficina',
+    ordens: 'Ordens de Reparação',
+    veiculos: 'Veículos',
+    clientes: 'Clientes'
+};
+
+function mostrarSecao(secao) {
+    const mostrarDashboard = secao === 'dashboard';
+    const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
+
+    document.getElementById('tituloPagina').textContent = titulosSecoes[secao];
+
+    document.getElementById('dashboardCards')
+        .classList.toggle('view-hidden', !mostrarDashboard);
+
+    document.getElementById('secaoOrdens')
+        .classList.toggle('view-hidden', !mostrarOrdens);
+
+    document.getElementById('secaoVeiculos')
+        .classList.toggle('view-hidden', secao !== 'veiculos');
+
+    document.getElementById('secaoClientes')
+        .classList.toggle('view-hidden', secao !== 'clientes');
+
+    document.querySelectorAll('.menu li').forEach(item => {
+        item.classList.toggle('active', item.dataset.section === secao);
+    });
+
+    if (secao === 'dashboard' || secao === 'ordens') {
+        carregarDadosDashboard();
+    } else if (secao === 'veiculos') {
+        carregarVeiculos();
+    } else if (secao === 'clientes') {
+        carregarClientes();
+    }
+}
+
+function escaparHtml(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function mostrarTabelaVazia(tabelaId, numeroColunas, mensagem) {
+    document.getElementById(tabelaId).innerHTML = `
+        <tr>
+            <td colspan="${numeroColunas}" class="empty-state">
+                ${escaparHtml(mensagem)}
+            </td>
+        </tr>`;
+}
+
+async function carregarVeiculos() {
+    const tabela = document.getElementById('tabelaVeiculos');
+    tabela.innerHTML = '';
+
+    try {
+        const response = await fetch('https://localhost:7085/api/Veiculos', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os veículos.');
+        }
+
+        const veiculos = await response.json();
+
+        if (veiculos.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaVeiculos',
+                6,
+                'Não existem veículos registados.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = veiculos.map(veiculo => `
+            <tr>
+                <td><strong>#${veiculo.id}</strong></td>
+                <td>${escaparHtml(veiculo.matricula)}</td>
+                <td>${escaparHtml(veiculo.marca)}</td>
+                <td>${escaparHtml(veiculo.modelo)}</td>
+                <td>${veiculo.ano}</td>
+                <td>${escaparHtml(veiculo.clienteId)}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+        mostrarTabelaVazia(
+            'tabelaVeiculos',
+            6,
+            'Erro ao carregar os veículos.'
+        );
+    }
+}
+
+async function carregarClientes() {
+    const tabela = document.getElementById('tabelaClientes');
+    tabela.innerHTML = '';
+
+    try {
+        const response = await fetch('https://localhost:7194/api/Auth/users', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os clientes.');
+        }
+
+        const clientes = await response.json();
+
+        if (clientes.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaClientes',
+                4,
+                'Não existem clientes registados.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = clientes.map(cliente => `
+            <tr>
+                <td class="user-id">${escaparHtml(cliente.id)}</td>
+                <td>${escaparHtml(cliente.firstName)}</td>
+                <td>${escaparHtml(cliente.email)}</td>
+                <td>${escaparHtml(cliente.role || 'Sem perfil')}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+        mostrarTabelaVazia(
+            'tabelaClientes',
+            4,
+            'Erro ao carregar os clientes.'
+        );
+    }
+}
+
 let paginaAtual = 1;
 let totalPaginas = 1;
 let filtroVeiculoId = null;

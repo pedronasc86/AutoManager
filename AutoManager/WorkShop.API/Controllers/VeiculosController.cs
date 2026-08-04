@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using WorkShop.API.Data;
 using WorkShop.API.DTOs;
 using WorkShop.API.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WorkShop.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class VeiculosController : ControllerBase
     {
         private readonly WorkshopContext _contexto;
@@ -15,6 +17,26 @@ namespace WorkShop.API.Controllers
         public VeiculosController(WorkshopContext contexto)
         {
             _contexto = contexto;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObterTodos()
+        {
+            var veiculos = await _contexto.Veiculos
+                .AsNoTracking()
+                .OrderBy(v => v.Id)
+                .Select(v => new RespostaVeiculoDto
+                {
+                    Id = v.Id,
+                    Matricula = v.Matricula,
+                    Marca = v.Marca,
+                    Modelo = v.Modelo,
+                    Ano = v.Ano,
+                    ClienteId = v.ClienteId
+                })
+                .ToListAsync();
+
+            return Ok(veiculos);
         }
 
         [HttpPost]

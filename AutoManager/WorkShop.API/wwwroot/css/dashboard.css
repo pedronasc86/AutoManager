@@ -530,3 +530,19 @@ tr {
     color: #991b1b;
     border: 1px solid #fca5a5;
 }
+.view-hidden {
+    display: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 28px;
+    color: var(--text-secondary);
+}
+
+.user-id {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

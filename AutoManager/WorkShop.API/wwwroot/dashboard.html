@@ -19,10 +19,29 @@
                 <span>AutoManager</span>
             </div>
             <ul class="menu">
-                <li class="active"><a href="#"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-                <li><a href="#" onclick="alert('Funcionalidade em desenvolvimento')"><i class="fa-solid fa-file-invoice-dollar"></i> Ordens de Reparação</a></li>
-                <li><a href="#" onclick="alert('Funcionalidade em desenvolvimento')"><i class="fa-solid fa-car"></i> Veículos</a></li>
-                <li><a href="#" onclick="alert('Funcionalidade em desenvolvimento')"><i class="fa-solid fa-users"></i> Clientes</a></li>
+                <li class="active" data-section="dashboard">
+                    <a href="#" onclick="mostrarSecao('dashboard'); return false;">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                </li>
+
+                <li data-section="ordens">
+                    <a href="#" onclick="mostrarSecao('ordens'); return false;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Ordens de Reparação
+                    </a>
+                </li>
+
+                <li data-section="veiculos">
+                    <a href="#" onclick="mostrarSecao('veiculos'); return false;">
+                        <i class="fa-solid fa-car"></i> Veículos
+                    </a>
+                </li>
+
+                <li data-section="clientes">
+                    <a href="#" onclick="mostrarSecao('clientes'); return false;">
+                        <i class="fa-solid fa-users"></i> Clientes
+                    </a>
+                </li>
             </ul>
         </div>
         <button class="logout-btn" onclick="terminarSessao()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Terminar Sessão</button>
@@ -31,7 +50,7 @@
     <!-- CONTEÚDO PRINCIPAL -->
     <main>
         <header>
-            <h1>Painel Geral da Oficina</h1>
+            <h1 id="tituloPagina">Painel Geral da Oficina</h1>
             <div class="user-profile">
                 <i class="fa-solid fa-user-shield"></i>
                 <span id="welcomeMessage">Bem-vindo!</span>
@@ -40,7 +59,7 @@
 
         <div class="content">
             <!-- CARDS DE ESTATÍSTICA -->
-            <div class="cards-grid">
+            <div id="dashboardCards" class="cards-grid">
                 <div class="card total">
                     <div class="card-info">
                         <h3>Ordens Totais</h3>
@@ -65,7 +84,7 @@
             </div>
 
             <!-- TABELA DE DADOS REAIS -->
-            <div class="table-section">
+            <section id="secaoOrdens" class="table-section">
                 <div class="table-header">
                     <h2>Ordens de Reparação</h2>
                     <button class="btn-new" onclick="abrirModalNovaOrdem()">
@@ -109,7 +128,44 @@
                         Seguinte <i class="fa-solid fa-chevron-right"></i>
                     </button>
                 </div>
-            </div>
+            </section>
+            <section id="secaoVeiculos" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Veículos</h2>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Matrícula</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Ano</th>
+                            <th>ID Cliente</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaVeiculos"></tbody>
+                </table>
+            </section>
+
+            <section id="secaoClientes" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Clientes</h2>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Primeiro Nome</th>
+                            <th>E-mail</th>
+                            <th>Perfil</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaClientes"></tbody>
+                </table>
+            </section>
         </div>
     </main>
 
