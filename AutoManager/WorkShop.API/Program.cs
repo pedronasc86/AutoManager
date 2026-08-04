@@ -53,10 +53,11 @@ namespace WorkShop.API
                 .AddCheck<PartsCatalogHealthCheck>("parts_catalog_health_check");
 
             // Regista o HttpClient apontando para o URL da PartsCatalog.API
-            builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
-            {
-                client.BaseAddress = new Uri("http://localhost:5039/"); // URL onde a PartsCatalog.API corre
-            });
+            //builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
+            //{
+            //    client.BaseAddress = new Uri("http://localhost:5039/"); // URL onde a PartsCatalog.API corre
+            //});
+            builder.Services.AddCatalogHttpClient(builder.Configuration);
 
             // CORS corrigido para permitir o dashboard (qualquer origem local ou desenvolvimento)
             builder.Services.AddCors(options =>

@@ -15,11 +15,28 @@ public static class HttpClientExtensions
     //    return services;
     //}
 
-    public static IServiceCollection AddCatalogHttpClient(this IServiceCollection services, IConfiguration configuration)
+    //public static IServiceCollection AddCatalogHttpClient(this IServiceCollection services, IConfiguration configuration)
+    //{
+    //    services.AddHttpClient<CatalogoPecasService>(client =>
+    //    {
+    //        client.BaseAddress = new Uri(configuration["ExternalServices:PartsCatalogUrl"] ?? "https://localhost:5001");
+    //    });
+
+    //    return services;
+    //}
+
+    public static IServiceCollection AddCatalogHttpClient(
+    this IServiceCollection services,
+    IConfiguration configuration)
     {
+        var partsCatalogUrl = configuration["ExternalServices:PartsCatalogUrl"]
+            ?? throw new InvalidOperationException(
+                "A configuração ExternalServices:PartsCatalogUrl não foi encontrada.");
+
         services.AddHttpClient<CatalogoPecasService>(client =>
         {
-            client.BaseAddress = new Uri(configuration["ExternalServices:PartsCatalogUrl"] ?? "https://localhost:5001");
+            client.BaseAddress = new Uri(partsCatalogUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
         });
 
         return services;
