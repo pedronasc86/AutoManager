@@ -24,8 +24,10 @@ namespace WorkShop.API.DTOs
     public class AtualizarOrdemReparacaoDto
     {
         public string? Estado { get; set; }
+        public string? DescricaoProblema { get; set; }
         public decimal? CustoMaoDeObra { get; set; }
         public decimal? CustoPecas { get; set; }
+
     }
 
     // DTO para ler os dados que vm da PartsCatalog.API via HttpClient

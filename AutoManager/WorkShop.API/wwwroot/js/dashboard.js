@@ -25,9 +25,19 @@ const titulosSecoes = {
     clientes: 'Clientes'
 };
 
+let secaoAtual = 'dashboard';
+
 function mostrarSecao(secao) {
+    secaoAtual = secao;
+
     const mostrarDashboard = secao === 'dashboard';
     const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
+
+    document.getElementById('btnNovaOrdem')
+        .classList.toggle('view-hidden', secao !== 'ordens');
+
+    document.getElementById('cabecalhoAcoesOrdens')
+        .classList.toggle('view-hidden', secao !== 'ordens');
 
     document.getElementById('secaoPecas')
         .classList.toggle('view-hidden', secao !== 'pecas');
@@ -292,7 +302,7 @@ async function carregarDadosDashboard() {
         if (dados.itens.length === 0) {
             tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 25px;">
+                <td colspan="${secaoAtual === 'ordens' ? 7 : 6}" style="text-align: center; padding: 25px;">
                     Não existem ordens para este veículo.
                 </td>
             </tr>
@@ -305,6 +315,18 @@ async function carregarDadosDashboard() {
 
             const tr = document.createElement('tr');
 
+            const acoesOrdem = secaoAtual === 'ordens' ? `
+            <td>
+                <button class="btn-action" onclick="verDetalhesOrdem(${ordem.id})">
+                    <i class="fa-solid fa-eye"></i> Ver
+                </button>
+
+                <button class="btn-action" onclick="abrirEdicaoOrdem(${ordem.id})">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </button>
+            </td>
+        ` : '';
+
             tr.innerHTML = `
             <td><strong>#${ordem.id}</strong></td>
             <td>${ordem.clienteId}</td>
@@ -316,12 +338,8 @@ async function carregarDadosDashboard() {
                     <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
                     ${estado}
                 </span>
-            <td>
-                <button class="btn-action"
-                    onclick="verDetalhesOrdem(${ordem.id})">
-                <i class="fa-solid fa-eye"></i> Ver
-                </button>
             </td>
+            ${acoesOrdem}
         `;
 
             tbody.appendChild(tr);
@@ -541,6 +559,105 @@ async function alterarEstadoOrdem() {
     } catch (error) {
         console.error(error);
         mensagem.textContent = 'Erro de comunicação ao atualizar o estado.';
+        mensagem.className = 'mensagem-ordem erro';
+    }
+}
+
+let ordemEmEdicao = null;
+
+function fecharModalEditarOrdem() {
+    document.getElementById('modalEditarOrdem').style.display = 'none';
+}
+
+async function abrirEdicaoOrdem(id) {
+    try {
+        const response = await fetch(
+            `https://localhost:7085/api/OrdensReparacao/${id}`,
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível obter a ordem.');
+        }
+
+        ordemEmEdicao = await response.json();
+
+        document.getElementById('tituloEditarOrdem').textContent =
+            `Editar Ordem #${ordemEmEdicao.id}`;
+
+        document.getElementById('editarDescricaoOrdem').value =
+            ordemEmEdicao.descricaoProblema || '';
+
+        document.getElementById('editarMaoDeObraOrdem').value =
+            ordemEmEdicao.custoMaoDeObra ?? 0;
+
+        document.getElementById('editarEstadoOrdem').value =
+            ordemEmEdicao.estado || 'Em Curso';
+
+        document.getElementById('mensagemEditarOrdem').textContent = '';
+        document.getElementById('mensagemEditarOrdem').className =
+            'mensagem-ordem';
+
+        document.getElementById('modalEditarOrdem').style.display = 'flex';
+    } catch (error) {
+        console.error(error);
+        alert('Não foi possível abrir a edição da ordem.');
+    }
+}
+
+async function guardarEdicaoOrdem(event) {
+    event.preventDefault();
+
+    if (!ordemEmEdicao) return;
+
+    const mensagem = document.getElementById('mensagemEditarOrdem');
+
+    const dadosAtualizados = {
+        descricaoProblema: document.getElementById('editarDescricaoOrdem').value,
+        custoMaoDeObra: Number(
+            document.getElementById('editarMaoDeObraOrdem').value
+        ),
+        estado: document.getElementById('editarEstadoOrdem').value
+    };
+
+    try {
+        const response = await fetch(
+            `https://localhost:7085/api/OrdensReparacao/${ordemEmEdicao.id}`,
+            {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dadosAtualizados)
+            }
+        );
+
+        if (!response.ok) {
+            const erro = await response.json().catch(() => ({}));
+
+            mensagem.textContent =
+                erro.mensagem || erro.message || 'Não foi possível guardar as alterações.';
+            mensagem.className = 'mensagem-ordem erro';
+            return;
+        }
+
+        mensagem.textContent = 'Ordem atualizada com sucesso!';
+        mensagem.className = 'mensagem-ordem sucesso';
+
+        carregarDadosDashboard();
+
+        setTimeout(() => {
+            fecharModalEditarOrdem();
+            mensagem.textContent = '';
+            mensagem.className = 'mensagem-ordem';
+        }, 1500);
+    } catch (error) {
+        console.error(error);
+        mensagem.textContent = 'Erro de comunicação ao atualizar a ordem.';
         mensagem.className = 'mensagem-ordem erro';
     }
 }

@@ -198,6 +198,11 @@ namespace WorkShop.API.Controllers
                     : null;
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.DescricaoProblema))
+            {
+                ordem.DescricaoProblema = dto.DescricaoProblema.Trim();
+            }
+
             if (dto.CustoMaoDeObra.HasValue)
             {
                 ordem.CustoMaoDeObra = dto.CustoMaoDeObra.Value;
