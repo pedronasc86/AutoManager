@@ -23,9 +23,9 @@ namespace WorkShop.API.DTOs
     // DTO do pedido para atualizar Ordem (RF8)
     public class AtualizarOrdemReparacaoDto
     {
-        public string? Estado { get; set; } // "Em Curso" ou "Concluída"
-        public decimal CustoMaoDeObra { get; set; }
-        public decimal CustoPecas { get; set; }
+        public string? Estado { get; set; }
+        public decimal? CustoMaoDeObra { get; set; }
+        public decimal? CustoPecas { get; set; }
     }
 
     // DTO para ler os dados que vm da PartsCatalog.API via HttpClient
@@ -51,5 +51,18 @@ namespace WorkShop.API.DTOs
         public decimal ValorTotal { get; set; }
         public int VeiculoId { get; set; }
         public string ClienteId { get; set; } = string.Empty;
+    }
+
+    public class PecaAplicadaRespostaDto
+    {
+        public Guid PecaId { get; set; }
+        public int Quantidade { get; set; }
+        public decimal PrecoUnitario { get; set; }
+        public decimal Subtotal => Quantidade * PrecoUnitario;
+    }
+
+    public class DetalheOrdemReparacaoDto : RespostaOrdemReparacaoDto
+    {
+        public List<PecaAplicadaRespostaDto> Pecas { get; set; } = new();
     }
 }

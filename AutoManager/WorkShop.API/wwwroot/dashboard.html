@@ -7,453 +7,7 @@
     <!-- Importação de fontes e ícones modernos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        :root {
-            --bg-main: #f8fafc;
-            --sidebar-bg: #0f172a;
-            --sidebar-hover: #1e293b;
-            --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --accent-yellow: #f59e0b;
-            --danger: #ef4444;
-            --border-color: #e2e8f0;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            display: flex;
-            height: 100vh;
-            background-color: var(--bg-main);
-            color: var(--text-primary);
-            overflow: hidden;
-        }
-
-        /* Sidebar Moderna */
-        aside {
-            width: 260px;
-            background-color: var(--sidebar-bg);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 24px;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 18px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 40px;
-        }
-
-            .logo-area i {
-                font-size: 24px;
-                color: var(--accent-blue);
-            }
-
-        .menu {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-            .menu li a {
-                color: #94a3b8;
-                text-decoration: none;
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                padding: 12px 16px;
-                border-radius: 8px;
-                font-weight: 500;
-                font-size: 14px;
-                transition: all 0.2s ease;
-            }
-
-                .menu li a i {
-                    font-size: 16px;
-                    width: 20px;
-                }
-
-                .menu li.active a, .menu li a:hover {
-                    background-color: var(--sidebar-hover);
-                    color: white;
-                }
-
-        .logout-btn {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: 0.2s;
-        }
-
-            .logout-btn:hover {
-                background-color: var(--danger);
-                color: white;
-            }
-
-        /* Main Content */
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        header {
-            background: var(--card-bg);
-            padding: 20px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-            header h1 {
-                font-size: 20px;
-                font-weight: 600;
-                color: var(--text-primary);
-            }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            background: var(--bg-main);
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-        }
-
-            .user-profile i {
-                color: var(--accent-blue);
-            }
-
-        .content {
-            padding: 32px;
-            max-width: 1400px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        /* Cards Profissionais */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
-            border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-        }
-
-            .card::before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                width: 4px;
-            }
-
-            .card.total::before {
-                background-color: var(--accent-blue);
-            }
-
-            .card.curso::before {
-                background-color: var(--accent-yellow);
-            }
-
-            .card.concluidas::before {
-                background-color: var(--accent-green);
-            }
-
-        .card-info h3 {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .card-info .number {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .card.total .card-icon {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent-blue);
-        }
-
-        .card.curso .card-icon {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--accent-yellow);
-        }
-
-        .card.concluidas .card-icon {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--accent-green);
-        }
-
-        /* Tabela Moderna */
-        .table-section {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-            border: 1px solid var(--border-color);
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-            .table-header h2 {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-primary);
-            }
-
-        .btn-new {
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.2s;
-        }
-
-            .btn-new:hover {
-                background-color: #2563eb;
-            }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th, td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 13px;
-        }
-
-        th {
-            background-color: #f8fafc;
-            color: var(--text-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-        }
-
-        tr {
-            transition: background 0.1s;
-        }
-
-            tr:hover {
-                background-color: #f8fafc;
-            }
-
-        .badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 11px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-            .badge.curso {
-                background: rgba(245, 158, 11, 0.1);
-                color: #d97706;
-            }
-
-            .badge.concluida {
-                background: rgba(16, 185, 129, 0.1);
-                color: #059669;
-            }
-
-            .badge.pendente {
-                background: rgba(100, 116, 139, 0.1);
-                color: #475569;
-            }
-
-        .btn-action {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--text-secondary);
-            transition: 0.2s;
-        }
-
-            .btn-action:hover {
-                background: var(--bg-main);
-                color: var(--accent-blue);
-                border-color: var(--accent-blue);
-            }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-            .modal-header h3 {
-                font-size: 18px;
-                font-weight: 600;
-            }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 5px;
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--text-secondary);
-            }
-
-            .form-group input, .form-group textarea {
-                width: 100%;
-                padding: 10px;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                font-size: 14px;
-            }
-
-        .btn-submit-modal {
-            background: var(--accent-green);
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-            .btn-submit-modal:hover {
-                background: #059669;
-            }
-
-        .mensagem-ordem {
-            display: none;
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-            .mensagem-ordem.sucesso {
-                display: block;
-                background-color: #dcfce7;
-                color: #166534;
-                border: 1px solid #86efac;
-            }
-    </style>
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
 
@@ -513,8 +67,20 @@
             <!-- TABELA DE DADOS REAIS -->
             <div class="table-section">
                 <div class="table-header">
-                    <h2>Ordens de Reparação Recentes</h2>
-                    <button class="btn-new" onclick="abrirModalNovaOrdem()"><i class="fa-solid fa-plus"></i> Nova Ordem</button>
+                    <h2>Ordens de Reparação</h2>
+                    <button class="btn-new" onclick="abrirModalNovaOrdem()">
+                        <i class="fa-solid fa-plus"></i> Nova Ordem
+                    </button>
+                </div>
+                <div class="table-filter-row">
+                    <input type="number" id="filtroVeiculoId"
+                           min="1" placeholder="ID do veículo">
+                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                        <i class="fa-solid fa-filter"></i> Filtrar
+                    </button>
+                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                        Limpar
+                    </button>
                 </div>
                 <table>
                     <thead>
@@ -532,6 +98,17 @@
                         <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
+                <div class="paginacao">
+                    <button id="btnPaginaAnterior" class="btn-pagina" onclick="mudarPagina(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPagina">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinte" class="btn-pagina" onclick="mudarPagina(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -574,169 +151,50 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE INTERATIVIDADE -->
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const tokenFromUrl = urlParams.get('token');
+    <div id="modalDetalhesOrdem" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloDetalheOrdem">Detalhes da Ordem</h3>
+                <button class="close-btn" onclick="fecharModalDetalhes()">&times;</button>
+            </div>
 
-        if (tokenFromUrl) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+            <div class="detalhes-grid">
+                <div><strong>Cliente:</strong> <span id="detalheCliente"></span></div>
+                <div><strong>Veículo:</strong> <span id="detalheVeiculo"></span></div>
+                <div><strong>Data de entrada:</strong> <span id="detalheDataEntrada"></span></div>
+                <div><strong>Data de conclusão:</strong> <span id="detalheDataConclusao"></span></div>
+                <div><strong>Mão de obra:</strong> <span id="detalheMaoDeObra"></span></div>
+                <div><strong>Peças:</strong> <span id="detalheCustoPecas"></span></div>
+                <div><strong>Total:</strong> <span id="detalheTotal"></span></div>
+            </div>
 
-        function terminarSessao() {
-            window.location.href = 'https://localhost:7194/login.html';
-        }
+            <div class="detalhe-descricao">
+                <strong>Descrição do problema</strong>
+                <p id="detalheDescricao"></p>
+            </div>
 
-        function abrirModalNovaOrdem() {
-            document.getElementById('modalNovaOrdem').style.display = 'flex';
-        }
+            <div class="detalhe-pecas">
+                <strong>Peças aplicadas</strong>
+                <div id="listaPecasDetalhe"></div>
+            </div>
 
-        function fecharModalNovaOrdem() {
-            document.getElementById('modalNovaOrdem').style.display = 'none';
-        }
+            <div class="alterar-estado">
+                <label for="estadoOrdem">Estado da reparação</label>
+                <select id="estadoOrdem">
+                    <option value="Em Curso">Em Curso</option>
+                    <option value="Concluída">Concluída</option>
+                </select>
 
-        async function carregarDadosDashboard() {
-            try {
-                const response = await fetch('https://localhost:7085/api/OrdensReparacao', {
-                    method: 'GET',
-                    credentials: 'include'
-                });
+                <button class="btn-submit-modal" onclick="alterarEstadoOrdem()">
+                    Guardar Estado
+                </button>
+            </div>
 
-                if (!response.ok) {
-                    console.warn("Aviso: A resposta da API não foi 200 OK.");
-                    return;
-                }
+            <div id="mensagemDetalheOrdem" class="mensagem-ordem"></div>
+        </div>
+    </div>
 
-                const ordens = await response.json();
-                const tbody = document.getElementById('tabelaOrdens');
-                tbody.innerHTML = '';
-
-                let total = ordens.length;
-                let cur = 0;
-                let conc = 0;
-
-                ordens.forEach(ordem => {
-                    let id = ordem.id || ordem.Id || '';
-                    let clienteId = ordem.clienteId || ordem.ClienteId || 'N/A';
-                    let veiculoId = ordem.veiculoId || ordem.VeiculoId || 'N/A';
-                    let descricao = ordem.descricaoProblema || ordem.DescricaoProblema || 'Sem descrição';
-                    let valor = ordem.valorTotal !== undefined ? ordem.valorTotal : (ordem.ValorTotal !== undefined ? ordem.ValorTotal : 0);
-                    let estado = ordem.estado || ordem.Estado || 'Em Curso';
-
-                    let estadoClasse = 'pendente';
-                    if (estado === 'Em Curso' || estado === 'EmCurso') {
-                        cur++;
-                        estado = 'Em Curso';
-                        estadoClasse = 'curso';
-                    } else if (estado === 'Concluída' || estado === 'Concluida') {
-                        conc++;
-                        estado = 'Concluída';
-                        estadoClasse = 'concluida';
-                    }
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                            <td><strong>#${id}</strong></td>
-                            <td>${clienteId}</td>
-                            <td>${veiculoId}</td>
-                            <td>${descricao}</td>
-                            <td><strong>${Number(valor).toFixed(2)} €</strong></td>
-                            <td><span class="badge ${estadoClasse}"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> ${estado}</span></td>
-                            <td><button class="btn-action" onclick="alert('Detalhes da Ordem #${id}')"><i class="fa-solid fa-eye"></i> Ver</button></td>
-                        `;
-                    tbody.appendChild(tr);
-                });
-
-                document.getElementById('totalOrdens').textContent = total;
-                document.getElementById('emCurso').textContent = cur;
-                document.getElementById('concluidas').textContent = conc;
-
-            } catch (error) {
-                console.error("Erro de ligação:", error);
-            }
-        }
-
-        async function criarOrdemReparacao(e) {
-            e.preventDefault();
-
-            const pecaIdVal = document.getElementById('pecaIdInput').value;
-            const qtdVal = parseInt(document.getElementById('quantidadePecaInput').value) || 0;
-
-            let pecasArray = [];
-            if (pecaIdVal && qtdVal > 0) {
-                pecasArray.push({
-                    pecaId: pecaIdVal,
-                    quantidade: qtdVal
-                });
-            }
-
-            const novaOrdem = {
-                clienteId: document.getElementById('clienteIdInput').value,
-                veiculoId: parseInt(document.getElementById('veiculoIdInput').value),
-                custoMaoDeObra: parseFloat(document.getElementById('custoMaoDeObraInput').value),
-                descricaoProblema: document.getElementById('descricaoInput').value,
-                pecas: pecasArray
-            };
-
-            try {
-                // Compatível com o endpoint /repair-order do RF8
-                const response = await fetch('https://localhost:7085/api/OrdensReparacao/repair-order', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(novaOrdem)
-                });
-
-                if (response.ok) {
-                    const mensagem = document.getElementById('mensagemOrdem');
-
-                    mensagem.textContent = 'Ordem de reparação criada com sucesso!';
-                    mensagem.className = 'mensagem-ordem sucesso';
-
-                    setTimeout(() => {
-                        fecharModalNovaOrdem();
-
-                        document.getElementById('formNovaOrdem').reset();
-
-                        mensagem.textContent = '';
-                        mensagem.className = 'mensagem-ordem';
-
-                        carregarDadosDashboard();
-                    }, 3000);
-                } else {
-                    const errData = await response.json().catch(() => ({}));
-                    alert('Erro ao criar ordem: ' + (errData.mensagem || errData.message || 'Verifique o stock ou os dados inseridos.'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Erro de comunicação ao submeter a ordem.');
-            }
-        }
-
-        async function carregarNomeUtilizador() {
-            try {
-                const response = await fetch('https://localhost:7194/api/Auth/me', {
-                    method: 'GET',
-                    credentials: 'include'
-                });
-
-                if (!response.ok) return;
-
-                const data = await response.json();
-
-                if (data.firstName) {
-                    document.getElementById('welcomeMessage').textContent =
-                        `Bem-vindo, ${data.firstName}!`;
-                }
-            } catch (error) {
-                console.error('Não foi possível carregar o nome do utilizador:', error);
-            }
-        }
-
-        carregarDadosDashboard();
-        carregarNomeUtilizador();
-    </script>
+    <!-- SCRIPT EXTERNO -->
+    <script src="js/dashboard.js"></script>
 </body>
 </html>

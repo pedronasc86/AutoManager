@@ -18,5 +18,7 @@ namespace WorkShop.API.Models
         public Veiculo? Veiculo { get; set; }
 
         public string ClienteId { get; set; } = string.Empty; // RF9
+
+        public ICollection<PecaAplicadaOrdem> Pecas { get; set; } = new List<PecaAplicadaOrdem>();
     }
 }
