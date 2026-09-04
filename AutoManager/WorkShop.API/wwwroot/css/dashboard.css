@@ -570,3 +570,300 @@ tr {
         color: #ffffff;
         border-color: #dc2626;
     }
+
+/* =========================================
+   ORDENS DE REPARAÇÃO - VISUAL PROFISSIONAL
+   ========================================= */
+
+.content {
+    padding: 34px 40px 48px;
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28rem), #f8fafc;
+}
+
+.table-section {
+    max-width: 1500px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid #e5eaf2;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.orders-header {
+    align-items: flex-start;
+    padding-bottom: 24px;
+    margin-bottom: 0;
+    border-bottom: 1px solid #e9eef5;
+}
+
+.section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+    color: #3b82f6;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+}
+
+    .section-eyebrow i {
+        font-size: 13px;
+    }
+
+.orders-header h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 25px;
+    font-weight: 750;
+    letter-spacing: -0.04em;
+}
+
+.section-description {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.btn-new {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 46px;
+    padding: 0 19px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.22);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .btn-new:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 22px rgba(37, 99, 235, 0.3);
+    }
+
+.table-filter-row {
+    display: flex;
+    align-items: end;
+    margin: 24px 0;
+    padding: 18px;
+    border: 1px solid #e6edf6;
+    border-radius: 13px;
+    background: #f8fafc;
+}
+
+.filter-field {
+    width: min(100%, 650px);
+}
+
+    .filter-field label {
+        display: block;
+        margin-bottom: 8px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .filter-controls > i {
+        margin-right: -37px;
+        z-index: 1;
+        color: #94a3b8;
+        pointer-events: none;
+    }
+
+    .filter-controls input {
+        width: 260px;
+        min-height: 42px;
+        padding: 0 12px 0 37px;
+        border: 1px solid #d7e0ec;
+        border-radius: 9px;
+        outline: none;
+        background: #ffffff;
+        color: #0f172a;
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .filter-controls input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        }
+
+.btn-filter,
+.btn-clear-filter,
+.btn-pagina {
+    min-height: 42px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-filter {
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 0 14px;
+}
+
+    .btn-filter:hover {
+        background: #1d4ed8;
+    }
+
+.btn-clear-filter {
+    border: 1px solid #d7e0ec;
+    background: #ffffff;
+    color: #64748b;
+    padding: 0 14px;
+}
+
+    .btn-clear-filter:hover {
+        border-color: #94a3b8;
+        color: #0f172a;
+    }
+
+.table-section table {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #e8edf4;
+    border-radius: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-section thead th {
+    padding: 15px 18px;
+    border-bottom: 1px solid #dfe7f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.table-section tbody td {
+    padding: 17px 18px;
+    border-bottom: 1px solid #edf1f6;
+    color: #334155;
+    font-size: 14px;
+}
+
+.table-section tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table-section tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+    .table-section tbody tr:hover {
+        background: #f8fbff;
+    }
+
+.table-section tbody td:first-child strong {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 12px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+    .badge.curso {
+        background: #fff7e8;
+        color: #b45309;
+    }
+
+    .badge.concluida {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+.btn-action {
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.paginacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 24px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.btn-pagina {
+    border: 1px solid #dce5f0;
+    background: #ffffff;
+    color: #475569;
+    padding: 0 14px;
+}
+
+    .btn-pagina:hover:not(:disabled) {
+        border-color: #3b82f6;
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .btn-pagina:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+    }
+
+@media (max-width: 850px) {
+    .content {
+        padding: 22px;
+    }
+
+    .table-section {
+        padding: 20px;
+    }
+
+    .orders-header {
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .filter-controls {
+        flex-wrap: wrap;
+    }
+
+        .filter-controls input {
+            width: 100%;
+        }
+
+        .filter-controls > i {
+            margin-right: -37px;
+        }
+
+    .table-section {
+        overflow-x: auto;
+    }
+}
