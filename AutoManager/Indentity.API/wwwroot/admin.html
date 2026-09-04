@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoManager — Administração</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .card {
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            margin: 14px 0 5px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 4px;
+        }
+
+        input, select {
+            border: 1px solid #ccc;
+        }
+
+        button {
+            margin-top: 20px;
+            color: white;
+            background: #007bff;
+            border: 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+            button:hover {
+                background: #0056b3;
+            }
+
+        #msgBox {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .success {
+            color: #198754;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>Criar utilizador</h1>
+        <p id="welcome"></p>
+
+        <form id="createUserForm">
+            <label for="firstName">Nome</label>
+            <input id="firstName" required>
+
+            <label for="email">E-mail</label>
+            <input id="email" type="email" required>
+
+            <label for="password">Password</label>
+            <input id="password" type="password" required>
+
+            <label for="confirmPassword">Confirmar password</label>
+            <input id="confirmPassword" type="password" required>
+
+            <label for="role">Role</label>
+            <select id="role" required>
+                <option value="Cliente">Cliente</option>
+                <option value="Mecanico">Mecânico</option>
+                <option value="Admin">Administrador</option>
+            </select>
+
+            <button type="submit">Criar utilizador</button>
+            <button type="button" id="btnVoltarDashboard">
+                Voltar ao dashboard
+            </button>
+        </form>
+
+        <p id="msgBox"></p>
+    </main>
+
+    <script>
+        const msgBox = document.getElementById('msgBox');
+
+        async function confirmarAdmin() {
+            const response = await fetch('/api/Auth/me', {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const user = await response.json();
+
+            if (user.role !== 'Admin') {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            document.getElementById('welcome').textContent =
+                `Sessão de administrador: ${user.firstName}`;
+        }
+
+        document.getElementById('createUserForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+
+            msgBox.textContent = '';
+            msgBox.className = '';
+
+            if (password !== confirmPassword) {
+                msgBox.textContent = 'As passwords não coincidem.';
+                msgBox.className = 'error';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/Auth/admin/criar-utilizador', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        firstName,
+                        email,
+                        password,
+                        confirmPassword,
+                        role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    msgBox.textContent = data.message || 'Não foi possível criar o utilizador.';
+                    msgBox.className = 'error';
+                    return;
+                }
+
+                msgBox.textContent = data.message;
+                msgBox.className = 'success';
+                document.getElementById('createUserForm').reset();
+            } catch {
+                msgBox.textContent = 'Erro de ligação ao servidor.';
+                msgBox.className = 'error';
+            }
+        });
+        document.getElementById('btnVoltarDashboard').addEventListener('click', () => {
+            window.location.href = 'https://localhost:7085/dashboard.html';
+        });
+        confirmarAdmin();
+    </script>
+</body>
+</html>

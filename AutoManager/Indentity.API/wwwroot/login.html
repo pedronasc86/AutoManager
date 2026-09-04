@@ -131,9 +131,20 @@
                 const data = await response.json();
 
                 if (response.ok && data.isSuccess) {
-                    window.location.href = 'https://localhost:7085/dashboard.html';
-                } else {
-                    errorDiv.textContent = data.message || 'Erro ao efetuar login.';
+                    const profileResponse = await fetch('https://localhost:7194/api/Auth/me', {
+                        credentials: 'include'
+                    });
+
+                    if (!profileResponse.ok) {
+                        errorDiv.textContent = 'Não foi possível obter os dados do utilizador.';
+                        return;
+                    }
+
+                    const profile = await profileResponse.json();
+
+                    if (response.ok && data.isSuccess) {
+                        window.location.href = 'https://localhost:7085/dashboard.html';
+                    }
                 }
             } catch (err) {
                 console.error(err);
