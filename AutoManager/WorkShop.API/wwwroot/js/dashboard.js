@@ -501,6 +501,18 @@ async function carregarNomeUtilizador() {
             document.getElementById('welcomeMessage').textContent =
                 `Bem-vindo, ${data.firstName}!`;
         }
+
+        if (data.role === 'Admin') {
+            const botao = document.getElementById('btnCriarUtilizador');
+
+            if (botao) {
+                botao.style.display = 'inline-block';
+
+                botao.addEventListener('click', () => {
+                    window.location.href = 'https://localhost:7194/CreateUser.html';
+                });
+            }
+        }
     } catch (error) {
         console.error('Não foi possível carregar o nome do utilizador:', error);
     }

@@ -1,9 +1,9 @@
-﻿using Identity.API.DTOs;
+using Identity.API.DTOs;
 using Identity.API.Services;
 using Indentity.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Identity.API.Controllers
@@ -27,19 +27,18 @@ namespace Identity.API.Controllers
         }
 
         // =========================================================================
-        // RF1 & RF3: REGISTO DE UTILIZADORES
+        // REGISTO PÚBLICO: cria sempre contas Cliente
         // =========================================================================
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            // 1. Validar se o modelo recebido cumpre as Data Annotations (RF3)
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // 2. Verificar se o email já está registado
             var userExists = await _userManager.FindByEmailAsync(dto.Email);
+
             if (userExists != null)
             {
                 return BadRequest(new AuthResponseDto
@@ -49,7 +48,6 @@ namespace Identity.API.Controllers
                 });
             }
 
-            // 3. Criar a nova instância do utilizador
             var newUser = new ApplicationUser
             {
                 UserName = dto.Email,
@@ -57,12 +55,12 @@ namespace Identity.API.Controllers
                 name = dto.FirstName.Trim()
             };
 
-            // 4. Tentar criar o utilizador na BD (Aplica as regras de Password Strong do RF3)
             var result = await _userManager.CreateAsync(newUser, dto.Password);
 
             if (!result.Succeeded)
             {
                 var errors = result.Errors.Select(e => e.Description);
+
                 return BadRequest(new AuthResponseDto
                 {
                     IsSuccess = false,
@@ -70,23 +68,24 @@ namespace Identity.API.Controllers
                 });
             }
 
-            // 5. Garantir que a Role/Função existe na BD e associar ao utilizador
-            if (!await _roleManager.RoleExistsAsync(dto.Role))
+            const string roleCliente = "Cliente";
+
+            if (!await _roleManager.RoleExistsAsync(roleCliente))
             {
-                await _roleManager.CreateAsync(new IdentityRole(dto.Role));
+                await _roleManager.CreateAsync(new IdentityRole(roleCliente));
             }
 
-            await _userManager.AddToRoleAsync(newUser, dto.Role);
+            await _userManager.AddToRoleAsync(newUser, roleCliente);
 
             return Ok(new AuthResponseDto
             {
                 IsSuccess = true,
                 Message = "Utilizador criado com sucesso!"
             });
-
         }
+
         // =========================================================================
-        // RF2: LOGIN E EMISSÃO DE TOKEN JWT
+        // LOGIN
         // =========================================================================
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
@@ -96,8 +95,8 @@ namespace Identity.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            // 1. Procurar o utilizador pelo Email
             var user = await _userManager.FindByEmailAsync(dto.Email);
+
             if (user == null)
             {
                 return Unauthorized(new AuthResponseDto
@@ -107,8 +106,9 @@ namespace Identity.API.Controllers
                 });
             }
 
-            // 2. Verificar se a password está correta
-            var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            var isPasswordValid =
+                await _userManager.CheckPasswordAsync(user, dto.Password);
+
             if (!isPasswordValid)
             {
                 return Unauthorized(new AuthResponseDto
@@ -118,7 +118,6 @@ namespace Identity.API.Controllers
                 });
             }
 
-            // 3. Gerar o Token JWT com as claims (sub, email, role)
             var token = await _tokenService.GenerateJwtTokenAsync(user);
 
             Response.Cookies.Append("jwtToken", token, new CookieOptions
@@ -137,6 +136,9 @@ namespace Identity.API.Controllers
             });
         }
 
+        // =========================================================================
+        // UTILIZADOR ATUAL
+        // =========================================================================
         [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
@@ -148,14 +150,20 @@ namespace Identity.API.Controllers
                 return Unauthorized();
             }
 
-            return Ok(new CurrentUserDto
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
             {
-                FirstName = user.name ?? string.Empty
+                firstName = user.name ?? string.Empty,
+                role = roles.FirstOrDefault() ?? "Cliente"
             });
         }
 
-    [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
-    [HttpGet("users")]
+        // =========================================================================
+        // LISTAR UTILIZADORES
+        // =========================================================================
+        [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
+        [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _userManager.Users
@@ -183,6 +191,75 @@ namespace Identity.API.Controllers
 
             return Ok(response);
         }
+
+        // =========================================================================
+        // ADMIN CRIA UTILIZADORES COM QUALQUER ROLE PERMITIDA
+        // =========================================================================
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/criar-utilizador")]
+        public async Task<IActionResult> CriarUtilizadorPorAdmin(
+            [FromBody] RegisterDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string[] rolesPermitidas = { "Cliente", "Mecanico", "Admin" };
+
+            var role = rolesPermitidas.FirstOrDefault(r =>
+                r.Equals(dto.Role, StringComparison.OrdinalIgnoreCase));
+
+            if (role == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Role inválida. Escolha Cliente, Mecanico ou Admin."
+                });
+            }
+
+            var userExists = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (userExists != null)
+            {
+                return BadRequest(new
+                {
+                    message = "Este email já se encontra registado."
+                });
+            }
+
+            var newUser = new ApplicationUser
+            {
+                UserName = dto.Email,
+                Email = dto.Email,
+                name = dto.FirstName.Trim()
+            };
+
+            var result = await _userManager.CreateAsync(newUser, dto.Password);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(new
+                {
+                    message = string.Join(
+                        " | ",
+                        result.Errors.Select(e => e.Description)
+                    )
+                });
+            }
+
+            await _userManager.AddToRoleAsync(newUser, role);
+
+            return Ok(new
+            {
+                isSuccess = true,
+                message = $"Utilizador criado com a role {role}."
+            });
+        }
+
+        // =========================================================================
+        // GESTÃO DE ADMINISTRADORES
+        // =========================================================================
         [Authorize(Roles = "Admin,admin")]
         [HttpGet("admins")]
         public async Task<IActionResult> GetAdmins()
@@ -292,8 +369,7 @@ namespace Identity.API.Controllers
         [HttpPut("admins/{id}")]
         public async Task<IActionResult> UpdateAdmin(
             string id,
-            [FromBody] AtualizarAdminDto dto
-        )
+            [FromBody] AtualizarAdminDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -302,7 +378,8 @@ namespace Identity.API.Controllers
 
             var admin = await _userManager.FindByIdAsync(id);
 
-            if (admin == null || !await _userManager.IsInRoleAsync(admin, "Admin"))
+            if (admin == null ||
+                !await _userManager.IsInRoleAsync(admin, "Admin"))
             {
                 return NotFound(new
                 {
@@ -338,7 +415,6 @@ namespace Identity.API.Controllers
                 });
             }
 
-            // Password vazia = mantém a password atual.
             if (!string.IsNullOrWhiteSpace(dto.Password))
             {
                 var resetToken =
@@ -389,7 +465,8 @@ namespace Identity.API.Controllers
 
             var admin = await _userManager.FindByIdAsync(id);
 
-            if (admin == null || !await _userManager.IsInRoleAsync(admin, "Admin"))
+            if (admin == null ||
+                !await _userManager.IsInRoleAsync(admin, "Admin"))
             {
                 return NotFound(new
                 {
