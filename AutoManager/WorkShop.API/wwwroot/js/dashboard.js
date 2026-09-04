@@ -5,10 +5,6 @@ if (tokenFromUrl) {
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
-function terminarSessao() {
-    window.location.href = 'https://localhost:7194/login.html';
-}
-
 function abrirModalNovaOrdem() {
     document.getElementById('modalNovaOrdem').style.display = 'flex';
 }
@@ -39,6 +35,11 @@ function mostrarSecao(secao) {
 
     document.getElementById('cabecalhoAcoesOrdens')
         .classList.toggle('view-hidden', secao !== 'ordens');
+
+    const cabecalhoAcoesClientes = document.getElementById('cabecalhoAcoesClientes');
+    if (cabecalhoAcoesClientes) {
+        cabecalhoAcoesClientes.classList.toggle('view-hidden', secao !== 'clientes');
+    }
 
     document.getElementById('secaoPecas')
         .classList.toggle('view-hidden', secao !== 'pecas');
@@ -76,7 +77,6 @@ function mostrarSecao(secao) {
         carregarAdmins();
     }
 }
-
 async function carregarPecas() {
     const tabela = document.getElementById('tabelaPecas');
     tabela.innerHTML = '';
@@ -194,49 +194,63 @@ async function carregarVeiculos() {
     }
 }
 
-async function carregarClientes() {
-    const tabela = document.getElementById('tabelaClientes');
-    tabela.innerHTML = '';
+ 
 
+async function carregarClientes() {
     try {
         const response = await fetch('https://localhost:7194/api/Auth/users', {
-            method: 'GET',
             credentials: 'include'
         });
 
-        if (!response.ok) {
-            throw new Error('Não foi possível carregar os clientes.');
-        }
+        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
 
-        const clientes = await response.json();
+        const utilizadores = await response.json();
 
-        if (clientes.length === 0) {
-            mostrarTabelaVazia(
-                'tabelaClientes',
-                4,
-                'Não existem clientes registados.'
-            );
+        // Filtra apenas quem tem a role "Cliente"
+        const clientes = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
+
+        // Procura o elemento no HTML
+        const tbody = document.getElementById('tabelaClientesBody');
+
+        if (!tbody) {
+            console.error("ERRO CRÍTICO: O elemento com id 'tabelaClientesBody' não foi encontrado no HTML!");
             return;
         }
 
-        tabela.innerHTML = clientes.map(cliente => `
+        // Limpa a tabela antes de preencher
+        tbody.innerHTML = '';
+
+        if (clientes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Nenhum cliente encontrado.</td></tr>';
+            return;
+        }
+
+        const tabelaClientes = document.getElementById('tabelaClientesBody'); // ou o ID correto do teu tbody de clientes
+
+        tabelaClientes.innerHTML = clientes.map(cliente => `
             <tr>
                 <td class="user-id">${escaparHtml(cliente.id)}</td>
                 <td>${escaparHtml(cliente.firstName)}</td>
                 <td>${escaparHtml(cliente.email)}</td>
-                <td>${escaparHtml(cliente.role || 'Sem perfil')}</td>
+                <td>${escaparHtml(cliente.role)}</td>
+                <td>
+                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                </td>
             </tr>
         `).join('');
+
     } catch (error) {
-        console.error(error);
-        mostrarTabelaVazia(
-            'tabelaClientes',
-            4,
-            'Erro ao carregar os clientes.'
-        );
+        console.error("Erro ao carregar clientes:", error);
     }
 }
 
+// Garante que a função corre assim que a página é aberta
+document.addEventListener('DOMContentLoaded', carregarClientes);
 let adminsCarregados = [];
 
 async function carregarAdmins() {
@@ -502,17 +516,6 @@ async function carregarNomeUtilizador() {
                 `Bem-vindo, ${data.firstName}!`;
         }
 
-        if (data.role === 'Admin') {
-            const botao = document.getElementById('btnCriarUtilizador');
-
-            if (botao) {
-                botao.style.display = 'inline-block';
-
-                botao.addEventListener('click', () => {
-                    window.location.href = 'https://localhost:7194/CreateUser.html';
-                });
-            }
-        }
     } catch (error) {
         console.error('Não foi possível carregar o nome do utilizador:', error);
     }
@@ -903,5 +906,126 @@ async function eliminarAdmin(id) {
     }
 }
 
+
+function abrirModalNovoCliente() {
+    document.getElementById('tituloModalCliente').textContent = 'Novo Cliente';
+    document.getElementById('clienteEdicaoId').value = '';
+    document.getElementById('formCliente').reset();
+
+    // Configurar campos de password como obrigatórios para novo registo
+    document.getElementById('clientePassword').required = true;
+    document.getElementById('labelPasswordCliente').style.display = 'block';
+    document.getElementById('clientePassword').style.display = 'block';
+    document.getElementById('ajudaPasswordCliente').style.display = 'block';
+
+    document.getElementById('modalCliente').style.display = 'flex';
+}
+
+function fecharModalCliente() {
+    document.getElementById('modalCliente').style.display = 'none';
+    document.getElementById('mensagemCliente').textContent = '';
+}
+
+function abrirModalEditarCliente(id) {
+    const cliente = clientesCarregados.find(c => c.id === id);
+    if (!cliente) return;
+
+    document.getElementById('tituloModalCliente').textContent = 'Editar Cliente';
+    document.getElementById('clienteEdicaoId').value = cliente.id;
+    document.getElementById('clientePrimeiroNome').value = cliente.firstName || '';
+    document.getElementById('clienteEmail').value = cliente.email || '';
+
+    // Na edição, a password geralmente não é obrigatória se não for alterada
+    document.getElementById('clientePassword').value = '';
+    document.getElementById('clientePassword').required = false;
+
+    document.getElementById('modalCliente').style.display = 'flex';
+}
+
+async function guardarCliente(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('clienteEdicaoId').value;
+    const firstName = document.getElementById('clientePrimeiroNome').value;
+    const email = document.getElementById('clienteEmail').value;
+    const password = document.getElementById('clientePassword').value;
+    const confirmPassword = document.getElementById('clienteConfirmPassword').value;
+
+    // Validar no lado do cliente antes de enviar (opcional, mas útil)
+    if (password && password !== confirmPassword) {
+        alert('As passwords não coincidem.');
+        return;
+    }
+
+    const dados = {
+        firstName: firstName,
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword, // <-- Enviado para o backend validar
+        role: "Cliente"
+    };
+
+    try {
+        let url = 'https://localhost:7194/api/Auth/users';
+        let method = id ? 'PUT' : 'POST';
+
+        if (id) {
+            url = `https://localhost:7194/api/Auth/users/${id}`;
+        }
+
+        const response = await fetch(url, {
+            method: method,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        if (response.ok) {
+            alert('Cliente guardado com sucesso!');
+            fecharModalCliente();
+            carregarClientes();
+        } else {
+            const errData = await response.json().catch(() => ({}));
+            let msgErro = errData.message || '';
+            if (!msgErro && typeof errData === 'object' && errData.errors) {
+                msgErro = Object.values(errData.errors).flat().join(' | ');
+            } else if (!msgErro && typeof errData === 'object') {
+                msgErro = Object.values(errData).flat().join(' | ');
+            }
+            alert('Erro ao guardar cliente: ' + (msgErro || response.statusText));
+        }
+    } catch (error) {
+        console.error("Erro de rede:", error);
+        alert('Erro de comunicação com o servidor.');
+    }
+}
+
+async function eliminarCliente(id) {
+    if (!confirm('Tens a certeza de que pretendes eliminar este cliente?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`https://localhost:7194/api/Auth/users/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            carregarClientes();
+        } else {
+            const errData = await response.json().catch(() => ({}));
+            alert('Erro ao eliminar cliente: ' + (errData.message || 'Erro desconhecido.'));
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Erro de comunicação ao eliminar o cliente.');
+    }
+}
+function terminarSessao() {
+    window.location.href = 'https://localhost:7194/login.html';
+}
 carregarDadosDashboard();
 carregarNomeUtilizador();
