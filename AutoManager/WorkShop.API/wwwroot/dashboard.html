@@ -56,9 +56,6 @@
                 </li>
             </ul>
         </div>
-        <button class="btn btn-default" id="btnCriarUtilizador" style="display: none;">
-            Criar utilizador
-        </button>
         <button class="logout-btn" onclick="terminarSessao()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Terminar Sessão</button>
     </aside>
 
@@ -189,6 +186,9 @@
             <section id="secaoClientes" class="table-section view-hidden">
                 <div class="table-header">
                     <h2>Clientes</h2>
+                    <button class="btn-new" onclick="abrirModalNovoCliente()">
+                        <i class="fa-solid fa-plus"></i> Novo Cliente
+                    </button>
                 </div>
 
                 <table>
@@ -198,9 +198,10 @@
                             <th>Primeiro Nome</th>
                             <th>E-mail</th>
                             <th>Perfil</th>
+                            <th id="cabecalhoAcoesClientes">Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaClientes"></tbody>
+                    <tbody id="tabelaClientesBody"></tbody>
                 </table>
             </section>
             <section id="secaoAdmins" class="table-section view-hidden">
@@ -397,7 +398,42 @@
             </form>
         </div>
     </div>
+    <!-- MODAL PARA CRIAR / EDITAR CLIENTE -->
+    <div id="modalCliente" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloModalCliente">Novo Cliente</h3>
+                <button class="close-btn" onclick="fecharModalCliente()">&times;</button>
+            </div>
 
+            <form id="formCliente" onsubmit="guardarCliente(event)">
+                <input type="hidden" id="clienteEdicaoId">
+
+                <div class="form-group">
+                    <label for="clientePrimeiroNome">Primeiro nome</label>
+                    <input type="text" id="clientePrimeiroNome" maxlength="50" required placeholder="Ex: João">
+                </div>
+
+                <div class="form-group">
+                    <label for="clienteEmail">E-mail</label>
+                    <input type="email" id="clienteEmail" required placeholder="cliente@automanager.com">
+                </div>
+
+                <div class="form-group">
+                    <label id="labelPasswordCliente" for="clientePassword">Password</label>
+                    <input type="password" id="clientePassword" minlength="8" autocomplete="new-password" placeholder="Ex: Cliente123!">
+                    <small id="ajudaPasswordCliente">Obrigatória ao criar um novo cliente.</small>
+                </div>
+                <div class="form-group">
+                    <label for="clienteConfirmPassword">Confirmar Password</label>
+                    <input type="password" id="clienteConfirmPassword" class="form-control" required />
+                </div>
+
+                <button type="submit" class="btn-submit-modal">Guardar Cliente</button>
+                <div id="mensagemCliente" class="mensagem-ordem"></div>
+            </form>
+        </div>
+    </div>
     <!-- SCRIPT EXTERNO -->
     <script src="js/dashboard.js?v=admins-2"></script>
 </body>

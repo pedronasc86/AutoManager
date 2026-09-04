@@ -162,34 +162,31 @@ namespace Identity.API.Controllers
         // =========================================================================
         // LISTAR UTILIZADORES
         // =========================================================================
-        [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
+        [Authorize(Roles = "Admin,admin")]
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
         {
-            var users = await _userManager.Users
-                .AsNoTracking()
-                .OrderBy(user => user.name)
-                .ThenBy(user => user.Email)
-                .ToListAsync();
-
-            var response = new List<UserListItemDto>();
+            var users = await _userManager.Users.ToListAsync();
+            var userList = new List<UserListItemDto>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                response.Add(new UserListItemDto
+                // Filtra estritamente para incluir apenas a role "Cliente"
+                if (roles.Contains("Cliente", StringComparer.OrdinalIgnoreCase))
                 {
-                    Id = user.Id,
-                    FirstName = string.IsNullOrWhiteSpace(user.name)
-                        ? user.Email ?? string.Empty
-                        : user.name,
-                    Email = user.Email ?? string.Empty,
-                    Role = string.Join(", ", roles)
-                });
+                    userList.Add(new UserListItemDto
+                    {
+                        Id = user.Id,
+                        FirstName = user.name,
+                        Email = user.Email,
+                        Role = roles.FirstOrDefault() ?? "Cliente"
+                    });
+                }
             }
 
-            return Ok(response);
+            return Ok(userList);
         }
 
         // =========================================================================
@@ -498,6 +495,106 @@ namespace Identity.API.Controllers
             }
 
             return NoContent();
+        }
+        [Authorize(Roles = "Admin,admin")]
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] AtualizarAdminDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound(new { message = "Utilizador não encontrado." });
+
+            var email = dto.Email.Trim();
+            var userWithEmail = await _userManager.FindByEmailAsync(email);
+            if (userWithEmail != null && userWithEmail.Id != user.Id)
+            {
+                return BadRequest(new { message = "Já existe uma conta com este e-mail." });
+            }
+
+            user.name = dto.FirstName.Trim();
+            user.Email = email;
+            user.UserName = email;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return BadRequest(new { message = string.Join(" | ", updateResult.Errors.Select(e => e.Description)) });
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                await _userManager.ResetPasswordAsync(user, resetToken, dto.Password);
+            }
+
+            return Ok(new UserListItemDto
+            {
+                Id = user.Id,
+                FirstName = user.name,
+                Email = user.Email,
+                Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? "Cliente"
+            });
+        }
+
+        [Authorize(Roles = "Admin,admin")]
+        [HttpDelete("users/{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound(new { message = "Utilizador não encontrado." });
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { message = string.Join(" | ", result.Errors.Select(e => e.Description)) });
+            }
+
+            return NoContent();
+        }
+        [Authorize(Roles = "Admin,admin")]
+        [HttpPost("users")]
+        public async Task<IActionResult> CreateUser([FromBody] RegisterDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new { message = "Já existe um utilizador com este e-mail." });
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = dto.Email,
+                Email = dto.Email,
+                name = dto.FirstName
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(" | ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errors });
+            }
+
+            // Atribuir a role recebida no DTO ou definir "Cliente" por defeito
+            var roleToAssign = string.IsNullOrWhiteSpace(dto.Role) ? "Cliente" : dto.Role;
+            if (!await _roleManager.RoleExistsAsync(roleToAssign))
+            {
+                await _roleManager.CreateAsync(new IdentityRole(roleToAssign));
+            }
+
+            await _userManager.AddToRoleAsync(user, roleToAssign);
+
+            return Ok(new UserListItemDto
+            {
+                Id = user.Id,
+                FirstName = user.name,
+                Email = user.Email,
+                Role = roleToAssign
+            });
         }
     }
 }
