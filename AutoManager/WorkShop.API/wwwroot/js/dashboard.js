@@ -22,7 +22,8 @@ const titulosSecoes = {
     ordens: 'Ordens de Reparação',
     pecas: 'Catálogo de Peças',
     veiculos: 'Veículos',
-    clientes: 'Clientes'
+    clientes: 'Clientes',
+    admins: 'Administradores'
 };
 
 let secaoAtual = 'dashboard';
@@ -42,10 +43,6 @@ function mostrarSecao(secao) {
     document.getElementById('secaoPecas')
         .classList.toggle('view-hidden', secao !== 'pecas');
 
-
-    document.getElementById('btnNovaOrdem')
-        .classList.toggle('view-hidden', secao !== 'ordens');
-
     document.getElementById('tituloPagina').textContent = titulosSecoes[secao];
 
     document.getElementById('dashboardCards')
@@ -60,6 +57,9 @@ function mostrarSecao(secao) {
     document.getElementById('secaoClientes')
         .classList.toggle('view-hidden', secao !== 'clientes');
 
+    document.getElementById('secaoAdmins')
+        .classList.toggle('view-hidden', secao !== 'admins');
+
     document.querySelectorAll('.menu li').forEach(item => {
         item.classList.toggle('active', item.dataset.section === secao);
     });
@@ -72,6 +72,8 @@ function mostrarSecao(secao) {
         carregarPecas();
     } else if (secao === 'clientes') {
         carregarClientes();
+    } else if (secao === 'admins') {
+        carregarAdmins();
     }
 }
 
@@ -231,6 +233,67 @@ async function carregarClientes() {
             'tabelaClientes',
             4,
             'Erro ao carregar os clientes.'
+        );
+    }
+}
+
+let adminsCarregados = [];
+
+async function carregarAdmins() {
+    const tabela = document.getElementById('tabelaAdmins');
+    tabela.innerHTML = '';
+
+    try {
+        const response = await fetch(
+            'https://localhost:7194/api/Auth/admins',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os administradores.');
+        }
+
+        const admins = await response.json();
+        adminsCarregados = admins;
+
+        if (admins.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaAdmins',
+                5,
+                'Não existem administradores registados.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = admins.map(admin => `
+            <tr>
+                <td class="user-id">${escaparHtml(admin.id)}</td>
+                <td>${escaparHtml(admin.firstName)}</td>
+                <td>${escaparHtml(admin.email)}</td>
+                <td>${escaparHtml(admin.role)}</td>
+                <td>
+                    <button class="btn-action btn-edit"
+                            onclick="abrirModalEditarAdmin('${admin.id}')">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+
+                    <button class="btn-action btn-delete"
+                            onclick="eliminarAdmin('${admin.id}')">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+
+        mostrarTabelaVazia(
+            'tabelaAdmins',
+            5,
+            'Erro ao carregar os administradores.'
         );
     }
 }
@@ -659,6 +722,172 @@ async function guardarEdicaoOrdem(event) {
         console.error(error);
         mensagem.textContent = 'Erro de comunicação ao atualizar a ordem.';
         mensagem.className = 'mensagem-ordem erro';
+    }
+}
+
+function fecharModalAdmin() {
+    document.getElementById('modalAdmin').style.display = 'none';
+}
+
+function limparMensagemAdmin() {
+    const mensagem = document.getElementById('mensagemAdmin');
+    mensagem.textContent = '';
+    mensagem.className = 'mensagem-ordem';
+}
+
+function abrirModalNovoAdmin() {
+    document.getElementById('formAdmin').reset();
+    document.getElementById('adminEdicaoId').value = '';
+
+    document.getElementById('tituloModalAdmin').textContent =
+        'Novo Administrador';
+
+    document.getElementById('labelPasswordAdmin').textContent =
+        'Password';
+
+    document.getElementById('ajudaPasswordAdmin').textContent =
+        'Obrigatória ao criar um administrador.';
+
+    limparMensagemAdmin();
+
+    document.getElementById('modalAdmin').style.display = 'flex';
+}
+
+function abrirModalEditarAdmin(id) {
+    const admin = adminsCarregados.find(item => item.id === id);
+
+    if (!admin) {
+        alert('Não foi possível encontrar o administrador.');
+        return;
+    }
+
+    document.getElementById('adminEdicaoId').value = admin.id;
+    document.getElementById('adminPrimeiroNome').value = admin.firstName;
+    document.getElementById('adminEmail').value = admin.email;
+    document.getElementById('adminPassword').value = '';
+
+    document.getElementById('tituloModalAdmin').textContent =
+        'Editar Administrador';
+
+    document.getElementById('labelPasswordAdmin').textContent =
+        'Nova password';
+
+    document.getElementById('ajudaPasswordAdmin').textContent =
+        'Opcional. Deixa vazia para manter a password atual.';
+
+    limparMensagemAdmin();
+
+    document.getElementById('modalAdmin').style.display = 'flex';
+}
+
+async function guardarAdmin(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('adminEdicaoId').value;
+    const primeiroNome =
+        document.getElementById('adminPrimeiroNome').value.trim();
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value;
+
+    const mensagem = document.getElementById('mensagemAdmin');
+
+    if (!id && !password) {
+        mensagem.textContent =
+            'A password é obrigatória ao criar um administrador.';
+        mensagem.className = 'mensagem-ordem erro';
+        return;
+    }
+
+    const dadosAdmin = {
+        firstName: primeiroNome,
+        email: email
+    };
+
+    if (password) {
+        dadosAdmin.password = password;
+    }
+
+    const url = id
+        ? `https://localhost:7194/api/Auth/admins/${id}`
+        : 'https://localhost:7194/api/Auth/admins';
+
+    const metodo = id ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: metodo,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosAdmin)
+        });
+
+        if (!response.ok) {
+            const erro = await response.json().catch(() => ({}));
+
+            mensagem.textContent =
+                erro.message || 'Não foi possível guardar o administrador.';
+            mensagem.className = 'mensagem-ordem erro';
+            return;
+        }
+
+        mensagem.textContent = id
+            ? 'Administrador atualizado com sucesso!'
+            : 'Administrador criado com sucesso!';
+
+        mensagem.className = 'mensagem-ordem sucesso';
+
+        await carregarAdmins();
+
+        setTimeout(() => {
+            fecharModalAdmin();
+            limparMensagemAdmin();
+        }, 1500);
+    } catch (error) {
+        console.error(error);
+
+        mensagem.textContent =
+            'Erro de comunicação ao guardar o administrador.';
+        mensagem.className = 'mensagem-ordem erro';
+    }
+}
+
+async function eliminarAdmin(id) {
+    const admin = adminsCarregados.find(item => item.id === id);
+
+    const confirmar = confirm(
+        `Queres eliminar o administrador "${admin?.firstName || ''}"?`
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `https://localhost:7194/api/Auth/admins/${id}`,
+            {
+                method: 'DELETE',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            const erro = await response.json().catch(() => ({}));
+
+            alert(
+                erro.message ||
+                'Não foi possível eliminar o administrador.'
+            );
+
+            return;
+        }
+
+        await carregarAdmins();
+    } catch (error) {
+        console.error(error);
+        alert('Erro de comunicação ao eliminar o administrador.');
     }
 }
 
