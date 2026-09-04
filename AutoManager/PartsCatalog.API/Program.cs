@@ -28,6 +28,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings["Secret"]!))
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var tokenDoCookie = context.Request.Cookies["jwtToken"];
+
+                if (!string.IsNullOrWhiteSpace(tokenDoCookie))
+                {
+                    context.Token = tokenDoCookie;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
