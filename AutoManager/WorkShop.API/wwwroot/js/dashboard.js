@@ -446,7 +446,7 @@ async function carregarNomeUtilizador() {
                 botao.style.display = 'inline-block';
 
                 botao.addEventListener('click', () => {
-                    window.location.href = 'https://localhost:7194/admin.html';
+                    window.location.href = 'https://localhost:7194/CreateUser.html';
                 });
             }
         }
