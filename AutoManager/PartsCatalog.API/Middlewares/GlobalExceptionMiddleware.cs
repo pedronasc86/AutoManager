@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace WorkShop.API.Middlewares;
+namespace PartsCatalog.API.Middlewares;
 
 public class GlobalExceptionMiddleware
 {
@@ -23,23 +23,22 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception exception)
         {
-            context.Response.StatusCode =
-                StatusCodes.Status500InternalServerError;
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-            var problemDetails = new ProblemDetails
+            var problem = new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,
                 Title = "Ocorreu um erro interno no servidor.",
                 Type = "https://httpstatuses.com/500",
                 Instance = context.Request.Path,
 
-                // Só mostra informação técnica quando estão a desenvolver.
+                // Só mostra detalhes técnicos durante desenvolvimento.
                 Detail = _environment.IsDevelopment()
                     ? exception.Message
                     : null
             };
 
-            await context.Response.WriteAsJsonAsync(problemDetails);
+            await context.Response.WriteAsJsonAsync(problem);
         }
     }
 }

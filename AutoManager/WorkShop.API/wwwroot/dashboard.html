@@ -7,7 +7,7 @@
     <!-- Importação de fontes e ícones modernos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css?v=admins-actions-1">
 </head>
 <body>
 
@@ -46,6 +46,12 @@
                 <li data-section="clientes">
                     <a href="#" onclick="mostrarSecao('clientes'); return false;">
                         <i class="fa-solid fa-users"></i> Clientes
+                    </a>
+                </li>
+
+                <li data-section="admins">
+                    <a href="#" onclick="mostrarSecao('admins'); return false;">
+                        <i class="fa-solid fa-user-shield"></i> Admins
                     </a>
                 </li>
             </ul>
@@ -197,6 +203,29 @@
                     <tbody id="tabelaClientes"></tbody>
                 </table>
             </section>
+            <section id="secaoAdmins" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Administradores</h2>
+
+                    <button class="btn-new" onclick="abrirModalNovoAdmin()">
+                        <i class="fa-solid fa-plus"></i> Novo Admin
+                    </button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Primeiro Nome</th>
+                            <th>E-mail</th>
+                            <th>Perfil</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tabelaAdmins"></tbody>
+                </table>
+            </section>
         </div>
     </main>
 
@@ -319,7 +348,57 @@
         </div>
     </div>
 
+    <div id="modalAdmin" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloModalAdmin">Novo Administrador</h3>
+
+                <button class="close-btn" onclick="fecharModalAdmin()">
+                    &times;
+                </button>
+            </div>
+
+            <form id="formAdmin" onsubmit="guardarAdmin(event)">
+                <input type="hidden" id="adminEdicaoId">
+
+                <div class="form-group">
+                    <label for="adminPrimeiroNome">Primeiro nome</label>
+                    <input type="text" id="adminPrimeiroNome"
+                           maxlength="50" required
+                           placeholder="Ex: João">
+                </div>
+
+                <div class="form-group">
+                    <label for="adminEmail">E-mail</label>
+                    <input type="email" id="adminEmail" required
+                           placeholder="admin@automanager.com">
+                </div>
+
+                <div class="form-group">
+                    <label id="labelPasswordAdmin" for="adminPassword">
+                        Password
+                    </label>
+
+                    <input type="password" id="adminPassword"
+                           minlength="8"
+                           autocomplete="new-password"
+                           placeholder="Ex: Admin123!">
+
+                    <small id="ajudaPasswordAdmin">
+                        Obrigatória ao criar um administrador.
+                    </small>
+                </div>
+
+                <button type="submit" class="btn-submit-modal">
+                    Guardar Administrador
+                </button>
+
+                <div id="mensagemAdmin" class="mensagem-ordem"></div>
+            </form>
+        </div>
+    </div>
+
     <!-- SCRIPT EXTERNO -->
-    <script src="js/dashboard.js"></script>
+    <script src="js/dashboard.js?v=admins-2"></script>
 </body>
 </html>

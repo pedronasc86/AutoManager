@@ -7,6 +7,7 @@ using PartsCatalog.API.Data;
 using PartsCatalog.API.Mappings;
 using PartsCatalog.API.Repositories;
 using PartsCatalog.API.Services;
+using PartsCatalog.API.Middlewares;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -91,6 +92,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 

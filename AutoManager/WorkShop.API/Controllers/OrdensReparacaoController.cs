@@ -5,6 +5,7 @@ using WorkShop.API.Data;
 using WorkShop.API.DTOs;
 using WorkShop.API.Models;
 using WorkShop.API.Services;
+using WorkShop.API.Services.Auth;
 
 namespace WorkShop.API.Controllers
 {
@@ -15,11 +16,15 @@ namespace WorkShop.API.Controllers
     {
         private readonly WorkshopContext _contexto;
         private readonly CatalogoPecasService _catalogoPecasService;
+        private readonly IUserContextService _userContextService;
 
-        public OrdensReparacaoController(WorkshopContext contexto, CatalogoPecasService catalogoPecasService)
+        public OrdensReparacaoController(WorkshopContext contexto, 
+            CatalogoPecasService catalogoPecasService, 
+            IUserContextService userContextService)
         {
             _contexto = contexto;
             _catalogoPecasService = catalogoPecasService;
+            _userContextService = userContextService;
         }
 
         // 1. GET: api/OrdensReparacao (Para a tabela principal do Dashboard)
@@ -84,6 +89,7 @@ namespace WorkShop.API.Controllers
         // 2. POST: api/OrdensReparacao (Compatível com /repair-order do enunciado RF8)
         [HttpPost]
         [HttpPost("repair-order")]
+        [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
         {
             // Validar veículo
@@ -233,6 +239,18 @@ namespace WorkShop.API.Controllers
         [HttpGet("cliente/{clienteId}")]
         public async Task<IActionResult> ObterHistoricoPorCliente(string clienteId)
         {
+            var utilizadorAutenticadoId = _userContextService.GetCurrentUserId();
+
+            if (string.IsNullOrWhiteSpace(utilizadorAutenticadoId))
+            {
+                return Unauthorized();
+            }
+
+            if (!string.Equals(utilizadorAutenticadoId, clienteId, StringComparison.Ordinal))
+            {
+                return Forbid();
+            }
+
             var ordens = await _contexto.OrdensReparacao
                 .Where(o => o.ClienteId == clienteId)
                 .OrderByDescending(o => o.DataEntrada)

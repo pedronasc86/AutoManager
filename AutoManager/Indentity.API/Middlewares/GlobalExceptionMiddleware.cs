@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace WorkShop.API.Middlewares;
+namespace Indentity.API.Middlewares;
 
 public class GlobalExceptionMiddleware
 {
@@ -19,10 +19,12 @@ public class GlobalExceptionMiddleware
     {
         try
         {
+            // Deixa o pedido continuar normalmente para controllers/endpoints.
             await _next(context);
         }
         catch (Exception exception)
         {
+            // Se ocorrer um erro não tratado, devolve uma resposta JSON organizada.
             context.Response.StatusCode =
                 StatusCodes.Status500InternalServerError;
 
@@ -33,7 +35,7 @@ public class GlobalExceptionMiddleware
                 Type = "https://httpstatuses.com/500",
                 Instance = context.Request.Path,
 
-                // Só mostra informação técnica quando estão a desenvolver.
+                // Em desenvolvimento mostra a causa; em produção não expõe detalhes.
                 Detail = _environment.IsDevelopment()
                     ? exception.Message
                     : null
