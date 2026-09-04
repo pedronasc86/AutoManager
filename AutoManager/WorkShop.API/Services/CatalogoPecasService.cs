@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using WorkShop.API.DTOs;
+using System.Text.Json;
 
 namespace WorkShop.API.Services
 {
@@ -102,6 +103,11 @@ namespace WorkShop.API.Services
             {
                 return (false, 0,
                     "A PartsCatalog.API demorou demasiado tempo a responder.");
+            }
+            catch (JsonException)
+            {
+                return (false, 0,
+                    "A resposta recebida da PartsCatalog.API não é válida.");
             }
         }
 
