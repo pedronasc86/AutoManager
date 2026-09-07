@@ -22,7 +22,6 @@ namespace Identity.API.DTOs
         public string ConfirmPassword { get; set; } = string.Empty;
 
         // Role/Função do utilizador: ex. "Admin", "Empresa", "Mecanico", "Contabilista"
-        [Required(ErrorMessage = "A Role/Função do utilizador é obrigatória.")]
         public string Role { get; set; } = string.Empty;
     }
 }

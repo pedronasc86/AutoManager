@@ -579,7 +579,7 @@ tr {
     white-space: nowrap;
 }
 
-/* Estilos para o rodapé e botões do modal de detalhes do pedido */
+/* Estilos para o rodapé e botões do modal de detalhes do pedido e ações de edição/remoção */
 #modalDetalhesPedido .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -616,4 +616,28 @@ tr {
 
     #modalDetalhesPedido .btn-primary:hover {
         background-color: #1d4ed8;
+    }
+
+.btn-action.btn-edit {
+    background-color: #eaf2ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+    .btn-action.btn-edit:hover {
+        background-color: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+
+.btn-action.btn-delete {
+    background-color: #fff1f2;
+    color: #dc2626;
+    border-color: #fecdd3;
+}
+
+    .btn-action.btn-delete:hover {
+        background-color: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
     }

@@ -12,19 +12,23 @@ public class PartsCatalogHealthCheck : IHealthCheck
         _catalogClient = catalogClient;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            // Chamada ao método correto do CatalogoPecasService
-            (bool temStock, decimal preco, string mensagemErro) =
-                await _catalogClient.VerificarStockEObterPrecoAsync("1", 1);
+            // Faz um pedido HTTP real ao endpoint público do Catálogo.
+            await _catalogClient.ObterPecasAsync();
 
-            return HealthCheckResult.Healthy("PartsCatalog.API está operacional.");
+            return HealthCheckResult.Healthy(
+                "PartsCatalog.API está operacional.");
         }
-        catch (Exception ex)
+        catch (HttpRequestException exception)
         {
-            return HealthCheckResult.Unhealthy("PartsCatalog.API inacessível.", ex);
+            return HealthCheckResult.Unhealthy(
+                "PartsCatalog.API está indisponível.",
+                exception);
         }
     }
 }

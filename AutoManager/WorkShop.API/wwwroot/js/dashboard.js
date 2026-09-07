@@ -65,6 +65,11 @@ function mostrarSecao(secao) {
         cabecalhoAcoesOrdensEl.classList.toggle('view-hidden', secao !== 'ordens');
     }
 
+    const cabecalhoAcoesClientes = document.getElementById('cabecalhoAcoesClientes');
+    if (cabecalhoAcoesClientes) {
+        cabecalhoAcoesClientes.classList.toggle('view-hidden', secao !== 'clientes');
+    }
+
     const secaoPecasEl = document.getElementById('secaoPecas');
     if (secaoPecasEl) {
         secaoPecasEl.classList.toggle('view-hidden', secao !== 'pecas');
@@ -485,8 +490,6 @@ async function guardarPeca(event) {
 
     try {
         const token = localStorage.getItem('token');
-
-        // Debug para validar o que está a ser preparado antes do fetch
         console.log('A enviar pedido:', { url, method, token, dadosPeca });
 
         const headers = {
@@ -643,48 +646,52 @@ async function carregarVeiculos() {
 }
 
 async function carregarClientes() {
-    const tabela = document.getElementById('tabelaClientes');
-    if (!tabela) return;
-    tabela.innerHTML = '';
-
     try {
         const response = await fetch('https://localhost:7194/api/Auth/users', {
-            method: 'GET',
             credentials: 'include'
         });
 
-        if (!response.ok) {
-            throw new Error('Não foi possível carregar os clientes.');
-        }
+        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
 
-        const clientes = await response.json();
+        const utilizadores = await response.json();
+        const clientes = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
+        const tbody = document.getElementById('tabelaClientesBody');
 
-        if (clientes.length === 0) {
-            mostrarTabelaVazia(
-                'tabelaClientes',
-                4,
-                'Não existem clientes registados.'
-            );
+        if (!tbody) {
+            console.error("ERRO CRÍTICO: O elemento com id 'tabelaClientesBody' não foi encontrado no HTML!");
             return;
         }
 
-        tabela.innerHTML = clientes.map(cliente => `
+        tbody.innerHTML = '';
+
+        if (clientes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum cliente encontrado.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = clientes.map(cliente => `
             <tr>
                 <td class="user-id">${escaparHtml(cliente.id)}</td>
                 <td>${escaparHtml(cliente.firstName)}</td>
                 <td>${escaparHtml(cliente.email)}</td>
-                <td>${escaparHtml(cliente.role || 'Sem perfil')}</td>
+                <td>${escaparHtml(cliente.role)}</td>
+                <td>
+                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                </td>
             </tr>
         `).join('');
+
     } catch (error) {
-        console.error(error);
-        mostrarTabelaVazia(
-            'tabelaClientes',
-            4,
-            'Erro ao carregar os clientes.'
-        );
+        console.error("Erro ao carregar clientes:", error);
     }
 }
+
+document.addEventListener('DOMContentLoaded', carregarClientes);
 
 let adminsCarregados = [];
 
@@ -729,7 +736,6 @@ async function carregarAdmins() {
                             onclick="abrirModalEditarAdmin('${admin.id}')">
                         <i class="fa-solid fa-pen"></i> Editar
                     </button>
-
                     <button class="btn-action btn-delete"
                             onclick="eliminarAdmin('${admin.id}')">
                         <i class="fa-solid fa-trash"></i> Eliminar
@@ -868,7 +874,6 @@ async function carregarDadosDashboard() {
         if (responseOrdens.ok && tbodyHistorico) {
             const dataOrdens = await responseOrdens.json();
 
-            // Dados diretos do DTO retornado pelo Controller
             const listaOrdens = dataOrdens.itens || dataOrdens.Itens || [];
             totalPaginasHistorico = dataOrdens.totalPaginas ?? dataOrdens.TotalPaginas ?? 1;
 
@@ -916,7 +921,6 @@ async function carregarDadosDashboard() {
                 }).join('');
             }
 
-            // Atualização dos botões de paginação
             const infoPaginaHistoricoEl = document.getElementById('infoPaginaHistorico');
             if (infoPaginaHistoricoEl) {
                 infoPaginaHistoricoEl.textContent = `Página ${paginaAtualHistorico} de ${totalPaginasHistorico}`;
@@ -928,20 +932,12 @@ async function carregarDadosDashboard() {
             if (btnSegHist) btnSegHist.disabled = paginaAtualHistorico >= totalPaginasHistorico;
 
             const totalConcluidas = dataOrdens.totalConcluidas ?? dataOrdens.TotalConcluidas ?? 0;
-
             const totalEmCurso = pedidosAprovados.length;
-
             const totalGeralOrdens = totalConcluidas + totalEmCurso;
 
-            if (document.getElementById('concluidas')) {
-                document.getElementById('concluidas').textContent = totalConcluidas;
-            }
-            if (document.getElementById('emCurso')) {
-                document.getElementById('emCurso').textContent = totalEmCurso;
-            }
-            if (document.getElementById('totalOrdens')) {
-                document.getElementById('totalOrdens').textContent = totalGeralOrdens;
-            }
+            if (document.getElementById('concluidas')) document.getElementById('concluidas').textContent = totalConcluidas;
+            if (document.getElementById('emCurso')) document.getElementById('emCurso').textContent = totalEmCurso;
+            if (document.getElementById('totalOrdens')) document.getElementById('totalOrdens').textContent = totalGeralOrdens;
         }
 
     } catch (error) {
@@ -1201,6 +1197,7 @@ async function carregarNomeUtilizador() {
                 welcomeEl.textContent = `Bem-vindo, ${data.firstName}!`;
             }
         }
+
     } catch (error) {
         console.error('Não foi possível carregar o nome do utilizador:', error);
     }
@@ -1591,6 +1588,122 @@ async function eliminarAdmin(id) {
     } catch (error) {
         console.error(error);
         alert('Erro de comunicação ao eliminar o administrador.');
+    }
+}
+
+
+function abrirModalNovoCliente() {
+    document.getElementById('tituloModalCliente').textContent = 'Novo Cliente';
+    document.getElementById('clienteEdicaoId').value = '';
+    document.getElementById('formCliente').reset();
+
+    document.getElementById('clientePassword').required = true;
+    document.getElementById('labelPasswordCliente').style.display = 'block';
+    document.getElementById('clientePassword').style.display = 'block';
+    document.getElementById('ajudaPasswordCliente').style.display = 'block';
+
+    document.getElementById('modalCliente').style.display = 'flex';
+}
+
+function fecharModalCliente() {
+    document.getElementById('modalCliente').style.display = 'none';
+    document.getElementById('mensagemCliente').textContent = '';
+}
+
+function abrirModalEditarCliente(id) {
+    const cliente = clientesCarregados.find(c => c.id === id);
+    if (!cliente) return;
+
+    document.getElementById('tituloModalCliente').textContent = 'Editar Cliente';
+    document.getElementById('clienteEdicaoId').value = cliente.id;
+    document.getElementById('clientePrimeiroNome').value = cliente.firstName || '';
+    document.getElementById('clienteEmail').value = cliente.email || '';
+
+    document.getElementById('clientePassword').value = '';
+    document.getElementById('clientePassword').required = false;
+
+    document.getElementById('modalCliente').style.display = 'flex';
+}
+
+async function guardarCliente(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('clienteEdicaoId').value;
+    const firstName = document.getElementById('clientePrimeiroNome').value;
+    const email = document.getElementById('clienteEmail').value;
+    const password = document.getElementById('clientePassword').value;
+    const confirmPassword = document.getElementById('clienteConfirmPassword').value;
+
+    if (password && password !== confirmPassword) {
+        alert('As passwords não coincidem.');
+        return;
+    }
+
+    const dados = {
+        firstName: firstName,
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
+        role: "Cliente"
+    };
+
+    try {
+        let url = 'https://localhost:7194/api/Auth/users';
+        let method = id ? 'PUT' : 'POST';
+
+        if (id) {
+            url = `https://localhost:7194/api/Auth/users/${id}`;
+        }
+
+        const response = await fetch(url, {
+            method: method,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        if (response.ok) {
+            alert('Cliente guardado com sucesso!');
+            fecharModalCliente();
+            carregarClientes();
+        } else {
+            const errData = await response.json().catch(() => ({}));
+            let msgErro = errData.message || '';
+            if (!msgErro && typeof errData === 'object' && errData.errors) {
+                msgErro = Object.values(errData.errors).flat().join(' | ');
+            } else if (!msgErro && typeof errData === 'object') {
+                msgErro = Object.values(errData).flat().join(' | ');
+            }
+            alert('Erro ao guardar cliente: ' + (msgErro || response.statusText));
+        }
+    } catch (error) {
+        console.error("Erro de rede:", error);
+        alert('Erro de comunicação com o servidor.');
+    }
+}
+
+async function eliminarCliente(id) {
+    if (!confirm('Tens a certeza de que pretendes eliminar este cliente?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`https://localhost:7194/api/Auth/users/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            carregarClientes();
+        } else {
+            const errData = await response.json().catch(() => ({}));
+            alert('Erro ao eliminar cliente: ' + (errData.message || 'Erro desconhecido.'));
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Erro de comunicação ao eliminar o cliente.');
     }
 }
 
