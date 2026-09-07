@@ -11,7 +11,19 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. ADICIONAR O SERVIÇO DE AUTENTICAÇÃO JWT
+// 1. CONFIGURAÇÃO DE CORS (Necessário para o Frontend comunicar com a API)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirFrontend", policy =>
+    {
+        policy.WithOrigins("https://localhost:7085", "https://localhost:7194", "http://localhost:5039")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// 2. ADICIONAR O SERVIÇO DE AUTENTICAÇÃO JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -31,7 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// 2. CONFIGURAÇÃO DA BASE DE DADOS (EF CORE) E INJEÇÃO DE DEPENDÊNCIAS
+// 3. CONFIGURAÇÃO DA BASE DE DADOS (EF CORE) E INJEÇÃO DE DEPENDÊNCIAS
 builder.Services.AddDbContext<CatalogDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -45,14 +57,14 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(MappingProfile));
 // Controllers + Configuração do OData
 builder.Services.AddControllers()
     .AddOData(options => options
-        .Select()       // Permite selecionar campos
-        .Filter()       // Permite filtrar ($filter)
-        .OrderBy()      // Permite ordenar ($orderby)
-        .Count()        // Permite contar ($count)
-        .SetMaxTop(10)  // Limite máximo de registos por página ($top)
+        .Select()
+        .Filter()
+        .OrderBy()
+        .Count()
+        .SetMaxTop(10)
     );
 
-// 3. CONFIGURAÇÃO DO SWAGGER (COM BOTÃO AUTHORIZE PARA O TOKEN JWT)
+// 4. CONFIGURAÇÃO DO SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -85,7 +97,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 4. PIPELINE DE MIDDLEWARES HTTP
+// 5. PIPELINE DE MIDDLEWARES HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,6 +105,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ATIVAR O CORS AQUI (Deve vir antes da Autenticação e Autorização)
+app.UseCors("PermitirFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

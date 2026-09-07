@@ -37,6 +37,7 @@ namespace PartsCatalog.API.Controllers
 
         // GET: api/pecas/{id}
         [HttpGet("{id:guid}")]
+        [Route("{id:guid}")]
         [AllowAnonymous]
         public async Task<ActionResult<PecaResponse>> ObterPorId(Guid id)
         {
@@ -97,10 +98,24 @@ namespace PartsCatalog.API.Controllers
 
         // PATCH: api/pecas/{id}/inativar
         [HttpPatch("{id:guid}/inativar")]
+        [AllowAnonymous]
         [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
         public async Task<IActionResult> InativarPeca(Guid id)
         {
             var sucesso = await _repository.InativarAsync(id);
+            if (!sucesso)
+                return NotFound("Peça não encontrada.");
+
+            return NoContent();
+        }
+
+        // PATCH: api/pecas/{id}/ativar
+        [HttpPatch("{id:guid}/ativar")]
+        [AllowAnonymous]
+        [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
+        public async Task<IActionResult> AtivarPeca(Guid id)
+        {
+            var sucesso = await _repository.AtivarAsync(id);
             if (!sucesso)
                 return NotFound("Peça não encontrada.");
 
@@ -118,6 +133,17 @@ namespace PartsCatalog.API.Controllers
             var disponivel = await _repository.VerificarDisponibilidadeAsync(id, quantidade);
 
             return Ok(disponivel);
+        }
+
+        // GET: api/pecas/admin/todas
+        [HttpGet("admin/todas")]
+        [AllowAnonymous]
+        [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
+        public async Task<ActionResult<IEnumerable<PecaResponse>>> ObterTodasAdmin()
+        {
+            var pecas = await _repository.ObterTodasAsync();
+            var response = _mapper.Map<IEnumerable<PecaResponse>>(pecas);
+            return Ok(response);
         }
     }
 }

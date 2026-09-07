@@ -130,11 +130,12 @@ namespace Identity.API.Controllers
                 Expires = DateTimeOffset.UtcNow.AddHours(8)
             });
 
-            return Ok(new AuthResponseDto
+            return Ok(new
             {
-                IsSuccess = true,
-                Message = "Login efetuado com sucesso!",
-                Expiration = DateTime.UtcNow.AddHours(8)
+                isSuccess = true,
+                message = "Login efetuado com sucesso!",
+                token = token,
+                expiration = DateTime.UtcNow.AddHours(8)
             });
         }
 

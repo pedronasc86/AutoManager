@@ -1,9 +1,11 @@
-using WorkShop.API.Extensions;
-using WorkShop.API.HealthChecks;
-using WorkShop.API.Services.Auth;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using WorkShop.API.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using WorkShop.API.Extensions;
+using WorkShop.API.HealthChecks;
+using WorkShop.API.Services;
+using WorkShop.API.Services.Auth;
+using WorkShop.API.Services.Pedidos;
 
 namespace WorkShop.API
 {
@@ -52,6 +54,7 @@ namespace WorkShop.API
             builder.Services.AddHealthChecks()
                 .AddCheck<PartsCatalogHealthCheck>("parts_catalog_health_check");
 
+            builder.Services.AddScoped<IPedidoReparacaoService, PedidoReparacaoService>();
             // Regista o HttpClient apontando para o URL da PartsCatalog.API
             builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
             {

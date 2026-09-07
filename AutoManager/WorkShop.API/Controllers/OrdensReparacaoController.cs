@@ -108,7 +108,6 @@ namespace WorkShop.API.Controllers
             }
 
             decimal totalCustoPecas = 0;
-
             var pecasDaOrdem = new List<PecaAplicadaOrdem>();
 
             if (dto.Pecas != null && dto.Pecas.Count > 0)
@@ -142,8 +141,9 @@ namespace WorkShop.API.Controllers
                 DescricaoProblema = dto.DescricaoProblema,
                 VeiculoId = dto.VeiculoId,
                 ClienteId = dto.ClienteId,
-                DataEntrada = DateTime.UtcNow,
-                Estado = "Em Curso",
+                DataEntrada = DateTime.UtcNow,     
+                DataConclusao = DateTime.UtcNow,  
+                Estado = "Concluída",              
                 CustoMaoDeObra = dto.CustoMaoDeObra,
                 CustoPecas = totalCustoPecas,
                 Pecas = pecasDaOrdem
@@ -152,7 +152,16 @@ namespace WorkShop.API.Controllers
             _contexto.OrdensReparacao.Add(ordem);
             await _contexto.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(ObterPorId), new { id = ordem.Id }, MapearParaRespostaDto(ordem));
+            // Reduzir o stock das peças no microsserviço de catálogo após gravar a ordem com sucesso
+            if (dto.Pecas != null && dto.Pecas.Count > 0)
+            {
+                foreach (var itemPeca in dto.Pecas)
+                {
+                    await _catalogoPecasService.AtualizarStockAsync(itemPeca.PecaId, itemPeca.Quantidade);
+                }
+            }
+
+            return CreatedAtAction(nameof(ObterPorId), new { id = ordem.Id }, MapearParaDetalheDto(ordem));
         }
 
         // 3. GET: api/OrdensReparacao/{id}
@@ -224,7 +233,7 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // 6. GET: api/OrdensReparacao/cliente/{clienteId} (Atende ao RF9)
+        // 6. GET: api/OrdensReparacao/cliente/{clienteId}
         [HttpGet("cliente/{clienteId}")]
         public async Task<IActionResult> ObterHistoricoPorCliente(string clienteId)
         {
@@ -265,6 +274,7 @@ namespace WorkShop.API.Controllers
                 ClienteId = ordem.ClienteId
             };
         }
+
         private static DetalheOrdemReparacaoDto MapearParaDetalheDto(OrdemReparacao ordem)
         {
             return new DetalheOrdemReparacaoDto
@@ -286,6 +296,18 @@ namespace WorkShop.API.Controllers
                     PrecoUnitario = p.PrecoUnitario
                 }).ToList()
             };
+        }
+
+        // GET: api/OrdensReparacao/todas
+        [HttpGet("todas")]
+        public async Task<IActionResult> ObterTodasSemPaginacao()
+        {
+            var ordens = await _contexto.OrdensReparacao
+                .AsNoTracking()
+                .OrderByDescending(o => o.Id)
+                .ToListAsync();
+
+            return Ok(ordens.Select(MapearParaRespostaDto));
         }
     }
 }
