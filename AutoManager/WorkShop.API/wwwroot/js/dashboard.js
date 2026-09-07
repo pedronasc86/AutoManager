@@ -194,7 +194,7 @@ async function carregarVeiculos() {
     }
 }
 
- 
+let clientesCarregados = []; // Declara no topo do teu ficheiro ou escopo global
 
 async function carregarClientes() {
     try {
@@ -206,28 +206,11 @@ async function carregarClientes() {
 
         const utilizadores = await response.json();
 
-        // Filtra apenas quem tem a role "Cliente"
-        const clientes = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
+        // Filtra e guarda na variável global
+        clientesCarregados = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
 
-        // Procura o elemento no HTML
-        const tbody = document.getElementById('tabelaClientesBody');
-
-        if (!tbody) {
-            console.error("ERRO CRÍTICO: O elemento com id 'tabelaClientesBody' não foi encontrado no HTML!");
-            return;
-        }
-
-        // Limpa a tabela antes de preencher
-        tbody.innerHTML = '';
-
-        if (clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Nenhum cliente encontrado.</td></tr>';
-            return;
-        }
-
-        const tabelaClientes = document.getElementById('tabelaClientesBody'); // ou o ID correto do teu tbody de clientes
-
-        tabelaClientes.innerHTML = clientes.map(cliente => `
+        const tabelaClientes = document.getElementById('tabelaClientesBody');
+        tabelaClientes.innerHTML = clientesCarregados.map(cliente => `
             <tr>
                 <td class="user-id">${escaparHtml(cliente.id)}</td>
                 <td>${escaparHtml(cliente.firstName)}</td>
@@ -751,17 +734,21 @@ function limparMensagemAdmin() {
 }
 
 function abrirModalNovoAdmin() {
-    document.getElementById('formAdmin').reset();
     document.getElementById('adminEdicaoId').value = '';
+    document.getElementById('adminPrimeiroNome').value = '';
+    document.getElementById('adminEmail').value = '';
+    document.getElementById('adminPassword').value = '';
 
-    document.getElementById('tituloModalAdmin').textContent =
-        'Novo Administrador';
+    const confirmInput = document.getElementById('adminConfirmPassword');
+    if (confirmInput) {
+        confirmInput.value = '';
+        confirmInput.required = true; // Obrigatório ao criar novo
+    }
+    document.getElementById('adminPassword').required = true;
 
-    document.getElementById('labelPasswordAdmin').textContent =
-        'Password';
-
-    document.getElementById('ajudaPasswordAdmin').textContent =
-        'Obrigatória ao criar um administrador.';
+    document.getElementById('tituloModalAdmin').textContent = 'Novo Administrador';
+    document.getElementById('labelPasswordAdmin').textContent = 'Password';
+    document.getElementById('ajudaPasswordAdmin').textContent = 'Obrigatória ao criar um novo administrador.';
 
     limparMensagemAdmin();
 
@@ -781,14 +768,18 @@ function abrirModalEditarAdmin(id) {
     document.getElementById('adminEmail').value = admin.email;
     document.getElementById('adminPassword').value = '';
 
-    document.getElementById('tituloModalAdmin').textContent =
-        'Editar Administrador';
+    // NOVO: Limpa o campo de confirmação e torna-o opcional na edição
+    const confirmInput = document.getElementById('adminConfirmPassword');
+    if (confirmInput) {
+        confirmInput.value = '';
+        confirmInput.required = false;
+    }
 
-    document.getElementById('labelPasswordAdmin').textContent =
-        'Nova password';
+    document.getElementById('adminPassword').required = false;
 
-    document.getElementById('ajudaPasswordAdmin').textContent =
-        'Opcional. Deixa vazia para manter a password atual.';
+    document.getElementById('tituloModalAdmin').textContent = 'Editar Administrador';
+    document.getElementById('labelPasswordAdmin').textContent = 'Nova password';
+    document.getElementById('ajudaPasswordAdmin').textContent = 'Opcional. Deixa vazia para manter a password atual.';
 
     limparMensagemAdmin();
 
@@ -906,17 +897,23 @@ async function eliminarAdmin(id) {
     }
 }
 
-
 function abrirModalNovoCliente() {
-    document.getElementById('tituloModalCliente').textContent = 'Novo Cliente';
     document.getElementById('clienteEdicaoId').value = '';
-    document.getElementById('formCliente').reset();
+    document.getElementById('clientePrimeiroNome').value = '';
+    document.getElementById('clienteEmail').value = '';
+    document.getElementById('clientePassword').value = '';
+    document.getElementById('clienteConfirmPassword').value = '';
 
-    // Configurar campos de password como obrigatórios para novo registo
+    document.getElementById('tituloModalCliente').textContent = 'Novo Cliente';
+    document.getElementById('labelPasswordCliente').textContent = 'Password';
+    document.getElementById('ajudaPasswordCliente').textContent = 'Obrigatória ao criar um novo cliente.';
+
+    // Torna as passwords obrigatórias novamente
     document.getElementById('clientePassword').required = true;
-    document.getElementById('labelPasswordCliente').style.display = 'block';
-    document.getElementById('clientePassword').style.display = 'block';
-    document.getElementById('ajudaPasswordCliente').style.display = 'block';
+    document.getElementById('clienteConfirmPassword').required = true;
+
+    const btnSubmit = document.querySelector('#formCliente .btn-submit-modal');
+    if (btnSubmit) btnSubmit.textContent = 'Guardar Cliente';
 
     document.getElementById('modalCliente').style.display = 'flex';
 }
@@ -927,18 +924,37 @@ function fecharModalCliente() {
 }
 
 function abrirModalEditarCliente(id) {
-    const cliente = clientesCarregados.find(c => c.id === id);
-    if (!cliente) return;
+    const cliente = clientesCarregados.find(item => item.id === id);
 
-    document.getElementById('tituloModalCliente').textContent = 'Editar Cliente';
+    if (!cliente) {
+        alert('Não foi possível encontrar o cliente.');
+        return;
+    }
+
+    // Preenche os inputs com os dados corretos
     document.getElementById('clienteEdicaoId').value = cliente.id;
     document.getElementById('clientePrimeiroNome').value = cliente.firstName || '';
     document.getElementById('clienteEmail').value = cliente.email || '';
-
-    // Na edição, a password geralmente não é obrigatória se não for alterada
     document.getElementById('clientePassword').value = '';
-    document.getElementById('clientePassword').required = false;
+    document.getElementById('clienteConfirmPassword').value = '';
 
+    // Altera os textos e títulos para o modo de edição
+    document.getElementById('tituloModalCliente').textContent = 'Editar Cliente';
+    document.getElementById('labelPasswordCliente').textContent = 'Nova password';
+    document.getElementById('ajudaPasswordCliente').textContent = 'Opcional. Deixa vazia para manter a password atual.';
+
+    // Opcional: Se a password passa a ser opcional na edição, removemos o required
+    document.getElementById('clientePassword').required = false;
+    document.getElementById('clienteConfirmPassword').required = false;
+
+    // Altera o texto do botão de submissão
+    const btnSubmit = document.querySelector('#formCliente .btn-submit-modal');
+    if (btnSubmit) btnSubmit.textContent = 'Atualizar Cliente';
+
+    // Limpa mensagens de erro anteriores se tiveres essa função
+    // limparMensagemCliente();
+
+    // Mostra o modal com flex (para ficar centrado igual ao dos admins)
     document.getElementById('modalCliente').style.display = 'flex';
 }
 
