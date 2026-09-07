@@ -155,6 +155,34 @@ namespace WorkShop.API.Controllers
             }
         }
 
+        [HttpGet("meus")]
+        public async Task<IActionResult> ObterMeusVeiculos()
+        {
+            var clienteId = _userContextService.GetCurrentUserId();
+
+            if (string.IsNullOrEmpty(clienteId))
+            {
+                return Unauthorized(new { message = "Não foi possível identificar o cliente através do token." });
+            }
+
+            var veiculos = await _contexto.Veiculos
+                .AsNoTracking()
+                .Where(v => v.ClienteId == clienteId)
+                .OrderBy(v => v.Id)
+                .Select(v => new RespostaVeiculoDto
+                {
+                    Id = v.Id,
+                    Matricula = v.Matricula,
+                    Marca = v.Marca,
+                    Modelo = v.Modelo,
+                    Ano = v.Ano,
+                    ClienteId = v.ClienteId
+                })
+                .ToListAsync();
+
+            return Ok(veiculos);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarVeiculo(int id)
         {

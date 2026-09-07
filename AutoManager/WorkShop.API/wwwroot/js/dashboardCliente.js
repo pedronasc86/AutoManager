@@ -193,7 +193,7 @@ async function carregarMeusVeiculos() {
     tabela.innerHTML = '';
 
     try {
-        const response = await fetch('https://localhost:7085/api/Veiculos', {
+        const response = await fetch('https://localhost:7085/api/Veiculos/meus', {
             method: 'GET',
             credentials: 'include'
         });
