@@ -7,7 +7,8 @@
     <!-- Importação de fontes e ícones modernos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/dashboard.css?v=admins-actions-complete">
+    <!--<link rel="stylesheet" href="css/dashboard.css?v=admins-actions-1">-->
+    <link rel="stylesheet" href="css/dashboard.css?v=professional-1">
 </head>
 <body>
 
@@ -126,18 +127,66 @@
 
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
             <section id="secaoOrdens" class="table-section">
-                <!-- Tabela Principal -->
-                <div class="table-header">
-                    <h2>Ordens de Reparação</h2>
+                <!--<div class="table-header">
+        <h2>Ordens de Reparação</h2>
+        <button id="btnNovaOrdem" class="btn-new view-hidden"
+                onclick="abrirModalNovaOrdem()">
+            <i class="fa-solid fa-plus"></i> Nova Ordem
+        </button>
+    </div>
+    <div class="table-filter-row">
+        <input type="number" id="filtroVeiculoId"
+               min="1" placeholder="ID do veículo">
+        <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+            <i class="fa-solid fa-filter"></i> Filtrar
+        </button>
+        <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+            Limpar
+        </button>
+    </div>-->
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                            Gestão da oficina
+                        </p>
+
+                        <h2>Ordens de Reparação</h2>
+
+                        <p class="section-description">
+                            Acompanha o estado, custos e progresso de todas as reparações.
+                        </p>
+                    </div>
+
+                    <button id="btnNovaOrdem" class="btn-new view-hidden"
+                            onclick="abrirModalNovaOrdem()">
+                        <i class="fa-solid fa-plus"></i>
+                        Nova ordem
+                    </button>
                 </div>
+
                 <div class="table-filter-row">
-                    <input type="number" id="filtroVeiculoId" min="1" placeholder="ID do veículo">
-                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-                        <i class="fa-solid fa-filter"></i> Filtrar
-                    </button>
-                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-                        Limpar
-                    </button>
+                    <div class="filter-field">
+                        <label for="filtroVeiculoId">Filtrar por veículo</label>
+
+                        <div class="filter-controls">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+
+                            <input type="number"
+                                   id="filtroVeiculoId"
+                                   min="1"
+                                   placeholder="Introduz o ID do veículo">
+
+                            <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                                <i class="fa-solid fa-filter"></i>
+                                Aplicar filtro
+                            </button>
+
+                            <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <table style="margin-bottom: 30px;">
                     <thead>
