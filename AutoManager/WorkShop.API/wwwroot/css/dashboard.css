@@ -27,7 +27,7 @@ body {
     overflow: hidden;
 }
 
-/* Sidebar Moderna */
+/* --- Sidebar Moderna --- */
 aside {
     width: 260px;
     background-color: var(--sidebar-bg);
@@ -79,7 +79,8 @@ aside {
             width: 20px;
         }
 
-        .menu li.active a, .menu li a:hover {
+        .menu li.active a,
+        .menu li a:hover {
             background-color: var(--sidebar-hover);
             color: white;
         }
@@ -105,7 +106,7 @@ aside {
         color: white;
     }
 
-/* Main Content */
+/* --- Conteúdo Principal --- */
 main {
     flex: 1;
     display: flex;
@@ -153,95 +154,103 @@ header {
     margin: 0 auto;
 }
 
-/* Cards Profissionais */
+/* --- Cartões do Dashboard (KPIs Modernizados) --- */
 .cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
     margin-bottom: 32px;
 }
 
 .card {
     background: var(--card-bg);
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+    padding: 20px 24px;
+    border-radius: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     border: 1px solid var(--border-color);
+    border-left: 5px solid transparent;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: relative;
-    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .card::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 4px;
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
     }
 
-    .card.total::before {
-        background-color: var(--accent-blue);
+    /* Bordas laterais dinâmicas */
+    .card.total, .card.totais {
+        border-left-color: var(--accent-blue);
     }
 
-    .card.curso::before {
-        background-color: var(--accent-yellow);
+    .card.rejeitadas, .card.rejeitados {
+        border-left-color: var(--danger);
     }
 
-    .card.concluidas::before {
-        background-color: var(--accent-green);
+    .card.curso, .card.em-analise {
+        border-left-color: var(--accent-yellow);
+    }
+
+    .card.concluidas, .card.concluidos {
+        border-left-color: var(--accent-green);
     }
 
 .card-info h3 {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     color: var(--text-secondary);
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
 }
 
 .card-info .number {
     font-size: 32px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-primary);
+    line-height: 1;
 }
 
 .card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
 }
 
-.card.total .card-icon {
+.card.total .card-icon, .card.totais .card-icon {
     background: rgba(59, 130, 246, 0.1);
     color: var(--accent-blue);
 }
 
-.card.curso .card-icon {
+.card.rejeitadas .card-icon, .card.rejeitados .card-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.card.curso .card-icon, .card.em-analise .card-icon {
     background: rgba(245, 158, 11, 0.1);
     color: var(--accent-yellow);
 }
 
-.card.concluidas .card-icon {
+.card.concluidas .card-icon, .card.concluidos .card-icon {
     background: rgba(16, 185, 129, 0.1);
     color: var(--accent-green);
 }
 
-/* Tabela Moderna */
+/* --- Tabelas --- */
 .table-section {
     background: var(--card-bg);
     padding: 24px;
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
     border: 1px solid var(--border-color);
+    margin-bottom: 24px;
 }
 
 .table-header {
@@ -263,6 +272,13 @@ header {
     gap: 8px;
     margin-bottom: 20px;
 }
+
+    .table-filter-row input {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 13px;
+    }
 
 .btn-new {
     background-color: var(--accent-blue);
@@ -337,6 +353,11 @@ tr {
         color: #475569;
     }
 
+    .badge.rejeitada {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
 .btn-action {
     background: transparent;
     border: 1px solid var(--border-color);
@@ -346,6 +367,7 @@ tr {
     font-weight: 500;
     color: var(--text-secondary);
     transition: 0.2s;
+    margin-right: 4px;
 }
 
     .btn-action:hover {
@@ -354,7 +376,12 @@ tr {
         border-color: var(--accent-blue);
     }
 
-/* Modal Styles */
+    .btn-action.btn-danger:hover {
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+
+/* --- Modais --- */
 .modal {
     display: none;
     position: fixed;
@@ -409,7 +436,9 @@ tr {
         color: var(--text-secondary);
     }
 
-    .form-group input, .form-group textarea {
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
         width: 100%;
         padding: 10px;
         border: 1px solid var(--border-color);
@@ -450,7 +479,14 @@ tr {
         border: 1px solid #86efac;
     }
 
-/* Botões de Paginação na tabela das ordens de reparação*/
+    .mensagem-ordem.erro {
+        display: block;
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+/* --- Filtros e Paginação --- */
 .btn-filter,
 .btn-clear-filter,
 .btn-pagina {
@@ -485,6 +521,7 @@ tr {
     cursor: not-allowed;
 }
 
+/* --- Detalhes da Ordem --- */
 .detalhes-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -524,14 +561,9 @@ tr {
     border-radius: 6px;
 }
 
-.mensagem-ordem.erro {
-    display: block;
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-}
+/* --- Utilitários --- */
 .view-hidden {
-    display: none;
+    display: none !important;
 }
 
 .empty-state {
@@ -546,6 +578,45 @@ tr {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* Estilos para o rodapé e botões do modal de detalhes do pedido e ações de edição/remoção */
+#modalDetalhesPedido .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+#modalDetalhesPedido .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+#modalDetalhesPedido .btn-secondary {
+    background-color: #f8f9fa;
+    color: #333;
+    border-color: #d1d5db;
+}
+
+    #modalDetalhesPedido .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+
+#modalDetalhesPedido .btn-primary {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+    #modalDetalhesPedido .btn-primary:hover {
+        background-color: #1d4ed8;
+    }
 
 .btn-action.btn-edit {
     background-color: #eaf2ff;

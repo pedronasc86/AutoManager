@@ -2,9 +2,22 @@
 const tokenFromUrl = urlParams.get('token');
 
 if (tokenFromUrl) {
+    localStorage.setItem('token', tokenFromUrl);
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 
+const tokenCookie = obterCookie('jwtToken');
+if (tokenCookie && !localStorage.getItem('token')) {
+    localStorage.setItem('token', tokenCookie);
+}
+
+// Termina a sessão e redireciona para o login
+function terminarSessao() {
+    localStorage.removeItem('token');
+    window.location.href = 'https://localhost:7194/login.html';
+}
+
+// Modal de Nova Ordem
 function abrirModalNovaOrdem() {
     document.getElementById('modalNovaOrdem').style.display = 'flex';
 }
@@ -13,8 +26,19 @@ function fecharModalNovaOrdem() {
     document.getElementById('modalNovaOrdem').style.display = 'none';
 }
 
+function obterCookie(nome) {
+    const valor = `; ${document.cookie}`;
+    const partes = valor.split(`; ${nome}=`);
+    if (partes.length === 2) return partes.pop().split(';').shift();
+}
+
+// Uso:
+const token = obterCookie('jwtToken');
+
+// Mapeamento dos títulos das secções
 const titulosSecoes = {
     dashboard: 'Painel Geral da Oficina',
+    pedidos: 'Gestão de Pedidos',
     ordens: 'Ordens de Reparação',
     pecas: 'Catálogo de Peças',
     veiculos: 'Veículos',
@@ -24,42 +48,67 @@ const titulosSecoes = {
 
 let secaoAtual = 'dashboard';
 
+// Alterna a exibição das vistas/secções
 function mostrarSecao(secao) {
     secaoAtual = secao;
 
     const mostrarDashboard = secao === 'dashboard';
     const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
 
-    document.getElementById('btnNovaOrdem')
-        .classList.toggle('view-hidden', secao !== 'ordens');
+    const btnNovaOrdemEl = document.getElementById('btnNovaOrdem');
+    if (btnNovaOrdemEl) {
+        btnNovaOrdemEl.classList.toggle('view-hidden', secao !== 'ordens');
+    }
 
-    document.getElementById('cabecalhoAcoesOrdens')
-        .classList.toggle('view-hidden', secao !== 'ordens');
+    const cabecalhoAcoesOrdensEl = document.getElementById('cabecalhoAcoesOrdens');
+    if (cabecalhoAcoesOrdensEl) {
+        cabecalhoAcoesOrdensEl.classList.toggle('view-hidden', secao !== 'ordens');
+    }
 
     const cabecalhoAcoesClientes = document.getElementById('cabecalhoAcoesClientes');
     if (cabecalhoAcoesClientes) {
         cabecalhoAcoesClientes.classList.toggle('view-hidden', secao !== 'clientes');
     }
 
-    document.getElementById('secaoPecas')
-        .classList.toggle('view-hidden', secao !== 'pecas');
+    const secaoPecasEl = document.getElementById('secaoPecas');
+    if (secaoPecasEl) {
+        secaoPecasEl.classList.toggle('view-hidden', secao !== 'pecas');
+    }
 
-    document.getElementById('tituloPagina').textContent = titulosSecoes[secao];
+    const tituloPaginaEl = document.getElementById('tituloPagina');
+    if (tituloPaginaEl) {
+        tituloPaginaEl.textContent = titulosSecoes[secao] || 'Oficina';
+    }
 
-    document.getElementById('dashboardCards')
-        .classList.toggle('view-hidden', !mostrarDashboard);
+    const dashboardCardsEl = document.getElementById('dashboardCards');
+    if (dashboardCardsEl) {
+        dashboardCardsEl.classList.toggle('view-hidden', !mostrarDashboard);
+    }
 
-    document.getElementById('secaoOrdens')
-        .classList.toggle('view-hidden', !mostrarOrdens);
+    const secaoOrdensEl = document.getElementById('secaoOrdens');
+    if (secaoOrdensEl) {
+        secaoOrdensEl.classList.toggle('view-hidden', !mostrarOrdens);
+    }
 
-    document.getElementById('secaoVeiculos')
-        .classList.toggle('view-hidden', secao !== 'veiculos');
+    const secaoVeiculosEl = document.getElementById('secaoVeiculos');
+    if (secaoVeiculosEl) {
+        secaoVeiculosEl.classList.toggle('view-hidden', secao !== 'veiculos');
+    }
 
-    document.getElementById('secaoClientes')
-        .classList.toggle('view-hidden', secao !== 'clientes');
+    const secaoClientesEl = document.getElementById('secaoClientes');
+    if (secaoClientesEl) {
+        secaoClientesEl.classList.toggle('view-hidden', secao !== 'clientes');
+    }
 
-    document.getElementById('secaoAdmins')
-        .classList.toggle('view-hidden', secao !== 'admins');
+    const secaoAdminsEl = document.getElementById('secaoAdmins');
+    if (secaoAdminsEl) {
+        secaoAdminsEl.classList.toggle('view-hidden', secao !== 'admins');
+    }
+
+    const secaoPedidosEl = document.getElementById('secaoPedidos');
+    if (secaoPedidosEl) {
+        secaoPedidosEl.classList.toggle('view-hidden', secao !== 'pedidos');
+    }
 
     document.querySelectorAll('.menu li').forEach(item => {
         item.classList.toggle('active', item.dataset.section === secao);
@@ -75,62 +124,12 @@ function mostrarSecao(secao) {
         carregarClientes();
     } else if (secao === 'admins') {
         carregarAdmins();
-    }
-}
-async function carregarPecas() {
-    const tabela = document.getElementById('tabelaPecas');
-    tabela.innerHTML = '';
-
-    try {
-        const response = await fetch(
-            'https://localhost:7085/api/Catalogo/pecas',
-            {
-                method: 'GET',
-                credentials: 'include'
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error('Não foi possível carregar as peças.');
-        }
-
-        const pecas = await response.json();
-
-        if (pecas.length === 0) {
-            mostrarTabelaVazia(
-                'tabelaPecas',
-                7,
-                'Não existem peças registadas.'
-            );
-            return;
-        }
-
-        tabela.innerHTML = pecas.map(peca => `
-            <tr>
-                <td>${escaparHtml(peca.referenciaPeca)}</td>
-                <td>${escaparHtml(peca.nome)}</td>
-                <td>${escaparHtml(peca.categoria)}</td>
-                <td>${escaparHtml(peca.compatibilidade)}</td>
-                <td><strong>${Number(peca.precoUnitario).toFixed(2)} €</strong></td>
-                <td>${peca.stockDisponivel}</td>
-                <td>
-                    <span class="badge ${peca.ativo ? 'concluida' : 'pendente'}">
-                        ${peca.ativo ? 'Ativa' : 'Inativa'}
-                    </span>
-                </td>
-            </tr>
-        `).join('');
-    } catch (error) {
-        console.error(error);
-
-        mostrarTabelaVazia(
-            'tabelaPecas',
-            7,
-            'Erro ao carregar as peças.'
-        );
+    } else if (secao === 'pedidos') {
+        carregarPedidos();
     }
 }
 
+// Escapa carateres HTML para prevenir XSS
 function escaparHtml(valor) {
     return String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -140,17 +139,469 @@ function escaparHtml(valor) {
         .replace(/'/g, '&#039;');
 }
 
+// Exibe mensagem de tabela vazia
 function mostrarTabelaVazia(tabelaId, numeroColunas, mensagem) {
-    document.getElementById(tabelaId).innerHTML = `
-        <tr>
-            <td colspan="${numeroColunas}" class="empty-state">
-                ${escaparHtml(mensagem)}
-            </td>
-        </tr>`;
+    const tabelaEl = document.getElementById(tabelaId);
+    if (tabelaEl) {
+        tabelaEl.innerHTML = `
+            <tr>
+                <td colspan="${numeroColunas}" class="empty-state" style="text-align: center; padding: 25px;">
+                    ${escaparHtml(mensagem)}
+                </td>
+            </tr>`;
+    }
+}
+
+// Carregar pedidos de reparação para a tabela
+async function carregarPedidos() {
+    const tabela = document.getElementById('tabelaGestaoPedidos');
+    if (!tabela) return;
+    tabela.innerHTML = '';
+
+    try {
+        const response = await fetch('https://localhost:7085/api/pedidos/pendentes', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const pedidos = Array.isArray(data) ? data : (data.itens || data.pedidos || []);
+
+        window.listaPedidosCache = pedidos;
+
+        if (pedidos.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaGestaoPedidos',
+                7,
+                'Não existem pedidos de reparação pendentes.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = pedidos.map(pedido => `
+            <tr>
+                <td>${formatarData(pedido.dataCriacao || pedido.dataEntrada || pedido.data)}</td>
+                <td>${escaparHtml(pedido.clienteId)}</td>
+                <td>${escaparHtml(pedido.veiculoId)}</td>
+                <td>${escaparHtml(pedido.problemaReportado || pedido.descricaoProblema || pedido.descricao)}</td>
+                <td>
+                    <span class="badge curso">
+                        ${escaparHtml(pedido.estado || 'Pendente')}
+                    </span>
+                </td>
+                <td>${escaparHtml(pedido.observacoes || '-')}</td>
+                <td>
+                    <button class="btn-action" onclick="verDetalhesPedido(${pedido.id})">
+                        <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+        mostrarTabelaVazia(
+            'tabelaGestaoPedidos',
+            7,
+            'Erro ao carregar os pedidos.'
+        );
+    }
+}
+
+let pedidoAtualEmAnalise = null;
+
+function verDetalhesPedido(id) {
+    const pedido = window.listaPedidosCache?.find(p => p.id === id);
+
+    if (!pedido) {
+        alert('Não foi possível encontrar os dados do pedido.');
+        return;
+    }
+
+    pedidoAtualEmAnalise = pedido;
+
+    document.getElementById('tituloModalPedido').textContent = `Analisar Pedido #${pedido.id}`;
+    document.getElementById('pedidoClienteId').textContent = pedido.clienteId;
+    document.getElementById('pedidoVeiculoId').textContent = pedido.veiculoId;
+    document.getElementById('pedidoProblema').textContent = pedido.problemaReportado || pedido.descricaoProblema || pedido.descricao || '-';
+
+    document.getElementById('pedidoIdEdicao').value = pedido.id;
+    document.getElementById('pedidoNovoEstado').value = pedido.estado || 'Aprovado';
+    document.getElementById('pedidoObservacoes').value = pedido.observacoes || '';
+
+    document.getElementById('mensagemAnalisePedido').textContent = '';
+    document.getElementById('mensagemAnalisePedido').className = 'mensagem-ordem';
+
+    document.getElementById('modalDetalhesPedido').style.display = 'flex';
+}
+
+function fecharModalDetalhesPedido() {
+    document.getElementById('modalDetalhesPedido').style.display = 'none';
+}
+
+async function guardarAnalisePedido(event) {
+    event.preventDefault();
+
+    if (!pedidoAtualEmAnalise) return;
+
+    const id = pedidoAtualEmAnalise.id;
+    const estado = document.getElementById('pedidoNovoEstado').value;
+    const observacoes = document.getElementById('pedidoObservacoes').value;
+    const mensagem = document.getElementById('mensagemAnalisePedido');
+
+    try {
+        const response = await fetch(`https://localhost:7085/api/pedidos/${id}/analisar`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                estado: estado,
+                observacoes: observacoes
+            })
+        });
+
+        if (!response.ok) {
+            const erro = await response.json().catch(() => ({}));
+            mensagem.textContent = erro.mensagem || 'Erro ao atualizar o pedido.';
+            mensagem.className = 'mensagem-ordem erro';
+            return;
+        }
+
+        mensagem.textContent = 'Pedido analisado com sucesso!';
+        mensagem.className = 'mensagem-ordem sucesso';
+
+        setTimeout(() => {
+            fecharModalDetalhesPedido();
+            carregarPedidos();
+        }, 1200);
+
+    } catch (error) {
+        console.error(error);
+        mensagem.textContent = 'Erro de comunicação com o servidor.';
+        mensagem.className = 'mensagem-ordem erro';
+    }
+}
+
+async function carregarPecas() {
+    const tabela = document.getElementById('tabelaPecas');
+    if (!tabela) return;
+    tabela.innerHTML = '';
+
+    try {
+        const inputPesquisa = document.getElementById('filtroPecaPesquisa');
+        const selectCategoria = document.getElementById('filtroPecaCategoria');
+        const selectEstado = document.getElementById('filtroPecaEstado');
+
+        let url = 'http://localhost:5039/api/pecas/admin/todas';
+        let queryParams = [];
+
+        if (inputPesquisa && inputPesquisa.value.trim()) {
+            const termo = inputPesquisa.value.trim();
+            queryParams.push(`contains(nome, '${termo}') or contains(referenciaPeca, '${termo}')`);
+        }
+
+        if (selectCategoria && selectCategoria.value) {
+            queryParams.push(`categoria eq '${selectCategoria.value}'`);
+        }
+
+        if (selectEstado && selectEstado.value !== '') {
+            queryParams.push(`ativo eq ${selectEstado.value}`);
+        }
+
+        if (queryParams.length > 0) {
+            url += `?$filter=${queryParams.join(' and ')}`;
+        }
+
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Falha ao buscar as peças.');
+        }
+
+        const data = await response.json();
+        const pecas = Array.isArray(data) ? data : (data.value || data.itens || []);
+
+        if (pecas.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaPecas',
+                7,
+                'Não existem peças registadas com os filtros selecionados.'
+            );
+            return;
+        }
+
+        tabela.innerHTML = pecas.map(peca => {
+            const id = peca.id ?? peca.Id;
+            const referencia = escaparHtml(peca.referenciaPeca ?? peca.ReferenciaPeca ?? '-');
+            const nome = escaparHtml(peca.nome ?? peca.Nome ?? '-');
+            const categoria = escaparHtml(peca.categoria ?? peca.Categoria ?? '-');
+            const compatibilidade = escaparHtml(peca.compatibilidade ?? peca.Compatibilidade ?? 'Geral');
+            const preco = Number(peca.precoUnitario ?? peca.PrecoUnitario ?? 0).toFixed(2);
+            const stock = peca.stockDisponivel ?? peca.StockDisponivel ?? 0;
+            const ativo = peca.ativo ?? peca.Ativo ?? true;
+
+            return `
+                <tr>
+                    <td>${referencia}</td>
+                    <td>${nome}</td>
+                    <td>${categoria}</td>
+                    <td>${compatibilidade}</td>
+                    <td><strong>${preco} €</strong></td>
+                    <td>${stock}</td>
+                    <td>
+                        <span class="badge ${ativo ? 'concluida' : 'pendente'}">
+                            ${ativo ? 'Ativa' : 'Inativa'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick="abrirModalEditarPeca('${id}')" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-action ${ativo ? 'btn-warning' : 'btn-success'}" onclick="alternarInativarPeca('${id}', ${ativo})" title="${ativo ? 'Inativar' : 'Ativar'}">
+                            <i class="fa-solid ${ativo ? 'fa-ban' : 'fa-check'}"></i>
+                        </button>
+                        <button class="btn-action btn-delete" onclick="eliminarPeca('${id}')" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error(error);
+        mostrarTabelaVazia(
+            'tabelaPecas',
+            8,
+            'Erro ao carregar as peças.'
+        );
+    }
+}
+
+function aplicarFiltrosPecas() {
+    carregarPecas();
+}
+
+function limparFiltrosPecas() {
+    if (document.getElementById('filtroPecaPesquisa')) document.getElementById('filtroPecaPesquisa').value = '';
+    if (document.getElementById('filtroPecaCategoria')) document.getElementById('filtroPecaCategoria').value = '';
+    if (document.getElementById('filtroPecaEstado')) document.getElementById('filtroPecaEstado').value = '';
+    carregarPecas();
+}
+
+let pecaEmEdicaoId = null;
+
+function abrirModalNovaPeca() {
+    pecaEmEdicaoId = null;
+    document.getElementById('tituloModalPeca').textContent = 'Registar Nova Peça';
+    document.getElementById('formPeca').reset();
+    const idInput = document.getElementById('pecaEdicaoId');
+    if (idInput) idInput.value = '';
+    document.getElementById('modalPeca').style.display = 'flex';
+}
+
+async function abrirModalEditarPeca(id) {
+    try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(`http://localhost:5039/api/pecas/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao obter dados da peça.');
+        }
+
+        const peca = await response.json();
+
+        const inputId = document.getElementById('pecaEdicaoId') || document.getElementById('pecaEdicaoReferencia');
+        if (inputId) inputId.value = id;
+
+        const tituloModal = document.getElementById('tituloModalPeca');
+        if (tituloModal) tituloModal.textContent = 'Editar Peça';
+
+        const setVal = (idEl, val) => {
+            const el = document.getElementById(idEl);
+            if (el) el.value = val ?? '';
+        };
+
+        setVal('referenciaPeca', peca.referenciaPeca ?? peca.ReferenciaPeca);
+        setVal('nomePeca', peca.nome ?? peca.Nome);
+        setVal('categoriaPeca', peca.categoria ?? peca.Categoria);
+        setVal('compatibilidadePeca', peca.compatibilidade ?? peca.Compatibilidade);
+        setVal('precoPeca', peca.precoUnitario ?? peca.PrecoUnitario ?? 0);
+        setVal('stockPeca', peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+
+        const modal = document.getElementById('modalPeca');
+        if (modal) modal.style.display = 'flex';
+    } catch (error) {
+        console.error(error);
+        alert('Não foi possível carregar os detalhes da peça.');
+    }
+}
+
+function fecharModalPeca() {
+    document.getElementById('modalPeca').style.display = 'none';
+}
+
+async function guardarPeca(event) {
+    event.preventDefault();
+
+    const getVal = (idEl) => document.getElementById(idEl)?.value ?? '';
+
+    const idEdicao = getVal('pecaEdicaoId') || getVal('pecaEdicaoReferencia');
+    const referenciaPeca = getVal('referenciaPeca');
+    const nome = getVal('nomePeca');
+    const categoria = getVal('categoriaPeca');
+    const compatibilidade = getVal('compatibilidadePeca');
+    const precoUnitario = parseFloat(getVal('precoPeca')) || 0;
+    const stockDisponivel = parseInt(getVal('stockPeca')) || 0;
+
+    const dadosPeca = {
+        referenciaPeca,
+        nome,
+        categoria,
+        compatibilidade,
+        precoUnitario,
+        stockDisponivel
+    };
+
+    const url = idEdicao
+        ? `http://localhost:5039/api/pecas/${idEdicao}`
+        : 'http://localhost:5039/api/pecas';
+
+    const method = idEdicao ? 'PUT' : 'POST';
+
+    try {
+        const token = localStorage.getItem('token');
+        console.log('A enviar pedido:', { url, method, token, dadosPeca });
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, {
+            method: method,
+            headers: headers,
+            body: JSON.stringify(dadosPeca)
+        });
+
+        if (!response.ok) {
+            const erroTexto = await response.text();
+            throw new Error(erroTexto || 'Erro ao guardar a peça.');
+        }
+
+        fecharModalPeca();
+        carregarPecas();
+        await carregarPecasParaCache();
+        alert('Peça guardada com sucesso!');
+
+    } catch (error) {
+        console.error('Erro ao guardar peça:', error);
+        alert('Erro ao guardar a peça: ' + error.message);
+    }
+}
+
+async function alternarInativarPeca(id, estadoAtual) {
+    const acao = estadoAtual ? 'inativar' : 'ativar';
+    if (!confirm(`Queres ${acao} esta peça?`)) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5039/api/pecas/${id}/${acao}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            alert('Erro ao alterar o estado da peça.');
+            return;
+        }
+
+        carregarPecas();
+    } catch (error) {
+        console.error(error);
+        alert('Erro de comunicação.');
+    }
+}
+
+async function eliminarPeca(id) {
+    if (!confirm('Tens a certeza que pretendes eliminar esta peça?')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5039/api/pecas/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Falha ao eliminar a peça.');
+        }
+
+        carregarPecas();
+        alert('Peça eliminada com sucesso!');
+    } catch (error) {
+        console.error('Erro ao eliminar:', error);
+        alert('Não foi possível eliminar a peça.');
+    }
+}
+
+function preencherSelectsPecas() {
+    const selects = document.querySelectorAll('.select-peca, #pecaIdSelect');
+    if (selects.length === 0 || !window.cachePecas) return;
+
+    selects.forEach(select => {
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Selecione uma peça...</option>';
+
+        window.cachePecas.forEach(peca => {
+            const id = peca.id || peca.Id;
+            const nome = peca.nome || peca.Nome;
+            const referencia = peca.referenciaPeca || peca.ReferenciaPeca || '';
+            const stock = peca.stockDisponivel ?? peca.StockDisponivel ?? 0;
+
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = `${referencia ? referencia + ' - ' : ''}${nome} (Stock: ${stock})`;
+            select.appendChild(option);
+        });
+
+        if (valorAtual) select.value = valorAtual;
+    });
 }
 
 async function carregarVeiculos() {
     const tabela = document.getElementById('tabelaVeiculos');
+    if (!tabela) return;
     tabela.innerHTML = '';
 
     try {
@@ -194,8 +645,6 @@ async function carregarVeiculos() {
     }
 }
 
- 
-
 async function carregarClientes() {
     try {
         const response = await fetch('https://localhost:7194/api/Auth/users', {
@@ -205,11 +654,7 @@ async function carregarClientes() {
         if (!response.ok) throw new Error('Erro ao carregar utilizadores');
 
         const utilizadores = await response.json();
-
-        // Filtra apenas quem tem a role "Cliente"
         const clientes = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
-
-        // Procura o elemento no HTML
         const tbody = document.getElementById('tabelaClientesBody');
 
         if (!tbody) {
@@ -217,17 +662,14 @@ async function carregarClientes() {
             return;
         }
 
-        // Limpa a tabela antes de preencher
         tbody.innerHTML = '';
 
         if (clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Nenhum cliente encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum cliente encontrado.</td></tr>';
             return;
         }
 
-        const tabelaClientes = document.getElementById('tabelaClientesBody'); // ou o ID correto do teu tbody de clientes
-
-        tabelaClientes.innerHTML = clientes.map(cliente => `
+        tbody.innerHTML = clientes.map(cliente => `
             <tr>
                 <td class="user-id">${escaparHtml(cliente.id)}</td>
                 <td>${escaparHtml(cliente.firstName)}</td>
@@ -249,12 +691,13 @@ async function carregarClientes() {
     }
 }
 
-// Garante que a função corre assim que a página é aberta
 document.addEventListener('DOMContentLoaded', carregarClientes);
+
 let adminsCarregados = [];
 
 async function carregarAdmins() {
     const tabela = document.getElementById('tabelaAdmins');
+    if (!tabela) return;
     tabela.innerHTML = '';
 
     try {
@@ -293,7 +736,6 @@ async function carregarAdmins() {
                             onclick="abrirModalEditarAdmin('${admin.id}')">
                         <i class="fa-solid fa-pen"></i> Editar
                     </button>
-
                     <button class="btn-action btn-delete"
                             onclick="eliminarAdmin('${admin.id}')">
                         <i class="fa-solid fa-trash"></i> Eliminar
@@ -303,7 +745,6 @@ async function carregarAdmins() {
         `).join('');
     } catch (error) {
         console.error(error);
-
         mostrarTabelaVazia(
             'tabelaAdmins',
             5,
@@ -312,18 +753,25 @@ async function carregarAdmins() {
     }
 }
 
-let paginaAtual = 1;
-let totalPaginas = 1;
+let paginaAtualOrdens = 1;
+let totalPaginasOrdens = 1;
+
+let paginaAtualHistorico = 1;
+let totalPaginasHistorico = 1;
+
 let filtroVeiculoId = null;
 
-function mudarPagina(direcao) {
-    const novaPagina = paginaAtual + direcao;
+function mudarPaginaOrdens(direcao) {
+    const novaPagina = paginaAtualOrdens + direcao;
+    if (novaPagina < 1 || novaPagina > totalPaginasOrdens) return;
+    paginaAtualOrdens = novaPagina;
+    carregarDadosDashboard();
+}
 
-    if (novaPagina < 1 || novaPagina > totalPaginas) {
-        return;
-    }
-
-    paginaAtual = novaPagina;
+function mudarPaginaHistorico(direcao) {
+    const novaPagina = paginaAtualHistorico + direcao;
+    if (novaPagina < 1 || novaPagina > totalPaginasHistorico) return;
+    paginaAtualHistorico = novaPagina;
     carregarDadosDashboard();
 }
 
@@ -336,167 +784,399 @@ function aplicarFiltroVeiculo() {
     }
 
     filtroVeiculoId = Number(valor);
-    paginaAtual = 1;
+    paginaAtualOrdens = 1;
+    paginaAtualHistorico = 1;
     carregarDadosDashboard();
 }
 
 function limparFiltroVeiculo() {
     document.getElementById('filtroVeiculoId').value = '';
     filtroVeiculoId = null;
-    paginaAtual = 1;
+    paginaAtualOrdens = 1;
+    paginaAtualHistorico = 1;
     carregarDadosDashboard();
 }
 
 async function carregarDadosDashboard() {
     try {
-        const parametros = new URLSearchParams({
-            pagina: paginaAtual,
-            tamanhoPagina: 5
+        // 1. Carregar Pedidos Aprovados (Aguardar Criação de Ordem)
+        const responsePedidos = await fetch('https://localhost:7085/api/pedidos/todos', {
+            method: 'GET',
+            credentials: 'include'
         });
 
-        if (filtroVeiculoId) {
-            parametros.append('veiculoId', filtroVeiculoId);
-        }
+        const tbodyOrdens = document.getElementById('tabelaOrdens');
+        let pedidosAprovados = [];
 
-        const response = await fetch(
-            `https://localhost:7085/api/OrdensReparacao?${parametros.toString()}`,
-            {
-                method: 'GET',
-                credentials: 'include'
+        if (responsePedidos.ok && tbodyOrdens) {
+            const dataPedidos = await responsePedidos.json();
+            const todosPedidos = Array.isArray(dataPedidos) ? dataPedidos : (dataPedidos.itens || dataPedidos.pedidos || []);
+
+            pedidosAprovados = todosPedidos.filter(p => (p.estado || p.Estado || '').toLowerCase() === 'aprovado');
+
+            if (filtroVeiculoId !== null) {
+                pedidosAprovados = pedidosAprovados.filter(p => Number(p.veiculoId ?? p.VeiculoId) === filtroVeiculoId);
             }
-        );
 
-        if (!response.ok) {
-            console.warn('Não foi possível carregar as ordens.');
-            return;
+            if (pedidosAprovados.length === 0) {
+                tbodyOrdens.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 25px;">
+                        Não existem pedidos aprovados a aguardar criação de ordem.
+                    </td>
+                </tr>`;
+            } else {
+                tbodyOrdens.innerHTML = pedidosAprovados.map(pedido => {
+                    const id = pedido.id ?? pedido.Id;
+                    const cliente = escaparHtml(pedido.clienteId ?? pedido.ClienteId ?? '');
+                    const veiculo = escaparHtml(pedido.veiculoId ?? pedido.VeiculoId ?? '');
+                    const descricao = escaparHtml(pedido.descricaoProblema ?? pedido.problemaReportado ?? pedido.descricao ?? '-');
+
+                    const badgeHtml = `
+                        <span class="badge curso" style="background-color: #cce5ff; color: #004085; padding: 4px 8px; border-radius: 4px;">
+                            <i class="fa-solid fa-clock" style="font-size: 10px;"></i> Aprovado
+                        </span>`;
+
+                    const acaoHtml = `
+                        <button class="btn-action" style="background-color: #0d6efd; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" 
+                                onclick="abrirModalCriarOrdemDePedido(${id}, '${cliente}', '${veiculo}', '${descricao.replace(/'/g, "\\'")}')">
+                            <i class="fa-solid fa-plus"></i> Criar Ordem
+                        </button>`;
+
+                    return `
+                        <tr>
+                            <td><strong>#${id}</strong></td>
+                            <td>${cliente}</td>
+                            <td>${veiculo}</td>
+                            <td>${descricao}</td>
+                            <td><strong>-</strong></td>
+                            <td>${badgeHtml}</td>
+                            <td>${acaoHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
         }
 
-        const dados = await response.json();
-        const tbody = document.getElementById('tabelaOrdens');
-
-        tbody.innerHTML = '';
-
-        if (dados.itens.length === 0) {
-            tbody.innerHTML = `
-            <tr>
-                <td colspan="${secaoAtual === 'ordens' ? 7 : 6}" style="text-align: center; padding: 25px;">
-                    Não existem ordens para este veículo.
-                </td>
-            </tr>
-        `;
+        // 2. Carregar Ordens de Reparação com Paginação e Filtro no Servidor
+        let urlOrdens = `https://localhost:7085/api/OrdensReparacao?pagina=${paginaAtualHistorico}&tamanhoPagina=20`;
+        if (filtroVeiculoId !== null) {
+            urlOrdens += `&veiculoId=${filtroVeiculoId}`;
         }
 
-        dados.itens.forEach(ordem => {
-            let estado = ordem.estado || 'Em Curso';
-            let estadoClasse = estado === 'Em Curso' ? 'curso' : 'concluida';
-
-            const tr = document.createElement('tr');
-
-            const acoesOrdem = secaoAtual === 'ordens' ? `
-            <td>
-                <button class="btn-action" onclick="verDetalhesOrdem(${ordem.id})">
-                    <i class="fa-solid fa-eye"></i> Ver
-                </button>
-
-                <button class="btn-action" onclick="abrirEdicaoOrdem(${ordem.id})">
-                    <i class="fa-solid fa-pen"></i> Editar
-                </button>
-            </td>
-        ` : '';
-
-            tr.innerHTML = `
-            <td><strong>#${ordem.id}</strong></td>
-            <td>${ordem.clienteId}</td>
-            <td>${ordem.veiculoId}</td>
-            <td>${ordem.descricaoProblema}</td>
-            <td><strong>${Number(ordem.valorTotal).toFixed(2)} €</strong></td>
-            <td>
-                <span class="badge ${estadoClasse}">
-                    <i class="fa-solid fa-circle" style="font-size: 6px;"></i>
-                    ${estado}
-                </span>
-            </td>
-            ${acoesOrdem}
-        `;
-
-            tbody.appendChild(tr);
+        const responseOrdens = await fetch(urlOrdens, {
+            method: 'GET',
+            credentials: 'include'
         });
 
-        document.getElementById('totalOrdens').textContent = dados.totalOrdens;
-        document.getElementById('emCurso').textContent = dados.totalEmCurso;
-        document.getElementById('concluidas').textContent = dados.totalConcluidas;
+        const tbodyHistorico = document.getElementById('tabelaHistoricoOrdens');
 
-        paginaAtual = dados.paginaAtual;
-        totalPaginas = dados.totalPaginas;
+        if (responseOrdens.ok && tbodyHistorico) {
+            const dataOrdens = await responseOrdens.json();
 
-        document.getElementById('infoPagina').textContent =
-            `Página ${paginaAtual} de ${totalPaginas} (${dados.totalItens} ordem(ns))`;
+            const listaOrdens = dataOrdens.itens || dataOrdens.Itens || [];
+            totalPaginasHistorico = dataOrdens.totalPaginas ?? dataOrdens.TotalPaginas ?? 1;
 
-        document.getElementById('btnPaginaAnterior').disabled = paginaAtual === 1;
-        document.getElementById('btnPaginaSeguinte').disabled =
-            paginaAtual === totalPaginas;
+            if (listaOrdens.length === 0) {
+                tbodyHistorico.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 25px;">
+                        Não existem ordens de reparação registadas.
+                    </td>
+                </tr>`;
+            } else {
+                tbodyHistorico.innerHTML = listaOrdens.map(ordem => {
+                    const idOrdem = ordem.id ?? ordem.Id;
+                    const cliente = escaparHtml(ordem.clienteId ?? ordem.ClienteId ?? '');
+                    const veiculo = escaparHtml(ordem.veiculoId ?? ordem.VeiculoId ?? '');
+                    const descricao = escaparHtml(ordem.descricaoProblema ?? ordem.DescricaoProblema ?? '-');
+                    const estado = ordem.estado ?? ordem.Estado ?? 'Em Curso';
+                    const valorTotal = ordem.valorTotal ?? ordem.ValorTotal ?? 0;
+
+                    const isConcluida = estado.toLowerCase().includes('concluíd') || estado.toLowerCase().includes('concluid');
+                    const badgeHtml = isConcluida ? `
+                        <span class="badge concluida" style="background-color: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 4px;">
+                            <i class="fa-solid fa-check" style="font-size: 10px;"></i> Concluída
+                        </span>` : `
+                        <span class="badge curso" style="background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;">
+                            <i class="fa-solid fa-clock" style="font-size: 10px;"></i> Em Curso
+                        </span>`;
+
+                    const acaoHtml = `
+                        <button class="btn-action" onclick="verDetalhesOrdem(${idOrdem})">
+                            <i class="fa-solid fa-eye"></i> Ver
+                        </button>`;
+
+                    return `
+                        <tr>
+                            <td><strong>#${idOrdem}</strong></td>
+                            <td>${cliente}</td>
+                            <td>${veiculo}</td>
+                            <td>${descricao}</td>
+                            <td><strong>${formatarMoeda(valorTotal)}</strong></td>
+                            <td>${badgeHtml}</td>
+                            <td>${acaoHtml}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const infoPaginaHistoricoEl = document.getElementById('infoPaginaHistorico');
+            if (infoPaginaHistoricoEl) {
+                infoPaginaHistoricoEl.textContent = `Página ${paginaAtualHistorico} de ${totalPaginasHistorico}`;
+            }
+
+            const btnAntHist = document.getElementById('btnPaginaAnteriorHistorico');
+            const btnSegHist = document.getElementById('btnPaginaSeguinteHistorico');
+            if (btnAntHist) btnAntHist.disabled = paginaAtualHistorico <= 1;
+            if (btnSegHist) btnSegHist.disabled = paginaAtualHistorico >= totalPaginasHistorico;
+
+            const totalConcluidas = dataOrdens.totalConcluidas ?? dataOrdens.TotalConcluidas ?? 0;
+            const totalEmCurso = pedidosAprovados.length;
+            const totalGeralOrdens = totalConcluidas + totalEmCurso;
+
+            if (document.getElementById('concluidas')) document.getElementById('concluidas').textContent = totalConcluidas;
+            if (document.getElementById('emCurso')) document.getElementById('emCurso').textContent = totalEmCurso;
+            if (document.getElementById('totalOrdens')) document.getElementById('totalOrdens').textContent = totalGeralOrdens;
+        }
 
     } catch (error) {
-        console.error('Erro de ligação:', error);
+        console.error('Erro ao carregar dados do dashboard:', error);
     }
 }
 
-async function criarOrdemReparacao(e) {
-    e.preventDefault();
+let pedidoIdAtualParaOrdem = null;
 
-    const pecaIdVal = document.getElementById('pecaIdInput').value;
-    const qtdVal = parseInt(document.getElementById('quantidadePecaInput').value) || 0;
+function abrirModalCriarOrdemDePedido(pedidoId, clienteId, veiculoId, descricao) {
+    pedidoIdAtualParaOrdem = pedidoId;
 
-    let pecasArray = [];
-    if (pecaIdVal && qtdVal > 0) {
-        pecasArray.push({
-            pecaId: pecaIdVal,
-            quantidade: qtdVal
-        });
+    const inputCliente = document.getElementById('clienteIdInput');
+    const inputVeiculo = document.getElementById('veiculoIdInput');
+    const inputDescricao = document.getElementById('descricaoInput');
+    const inputQtdPecas = document.getElementById('quantidadePecasInput');
+
+    if (inputCliente) inputCliente.value = clienteId;
+    if (inputVeiculo) inputVeiculo.value = veiculoId;
+    if (inputDescricao) inputDescricao.value = descricao;
+
+    if (inputQtdPecas) inputQtdPecas.value = 0;
+    gerarCamposPecas(0);
+
+    const mensagemDiv = document.getElementById('mensagemOrdem');
+    if (mensagemDiv) {
+        mensagemDiv.textContent = '';
+        mensagemDiv.className = 'mensagem-ordem';
     }
 
-    const novaOrdem = {
-        clienteId: document.getElementById('clienteIdInput').value,
-        veiculoId: parseInt(document.getElementById('veiculoIdInput').value),
-        custoMaoDeObra: parseFloat(document.getElementById('custoMaoDeObraInput').value),
-        descricaoProblema: document.getElementById('descricaoInput').value,
-        pecas: pecasArray
-    };
+    const modal = document.getElementById('modalNovaOrdem');
+    if (modal) modal.style.display = 'flex';
+}
+
+let pecasDisponiveisCache = [];
+
+async function carregarPecasParaCache() {
+    try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch('http://localhost:5039/api/pecas', {
+            method: 'GET',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Falha ao carregar peças para cache.');
+        }
+
+        const data = await response.json();
+        window.cachePecas = Array.isArray(data) ? data : (data.value || data.itens || []);
+
+        preencherSelectsPecas();
+    } catch (error) {
+        console.error('Erro ao carregar peças para o select:', error);
+    }
+}
+
+carregarPecasParaCache();
+
+async function gerarCamposPecas(quantidade) {
+    const wrapper = document.getElementById('listaCamposPecas');
+    if (!wrapper) return;
+    wrapper.innerHTML = '';
+
+    const qtd = parseInt(quantidade) || 0;
+
+    if (!window.cachePecas || window.cachePecas.length === 0) {
+        await carregarPecasParaCache();
+    }
+
+    let optionsHtml = '<option value="">Selecione uma peça...</option>';
+
+    const stockPorPeca = {};
+
+    window.cachePecas.forEach(p => {
+        const ativo = p.ativo ?? p.Ativo ?? true;
+        if (!ativo) return;
+
+        const idUnico = p.id || p.Id;
+        const nomePeca = p.nome || p.Nome;
+        const referencia = p.referenciaPeca || p.ReferenciaPeca || '';
+        const stock = p.stockDisponivel ?? p.StockDisponivel ?? 0;
+
+        stockPorPeca[idUnico] = stock;
+
+        optionsHtml += `<option value="${idUnico}">${referencia ? referencia + ' - ' : ''}${nomePeca} (Stock: ${stock})</option>`;
+    });
+
+    for (let i = 0; i < qtd; i++) {
+        wrapper.innerHTML += `
+            <div class="pecas-item-container" style="border-top: 1px dashed #ddd; padding-top: 10px; margin-top: 10px;">
+                <div style="font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px;">Peça ${i + 1}</div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label style="font-size: 11px; color: #666; display: block; margin-bottom: 2px;">Peça</label>
+                        <select class="form-control form-control-sm peca-select" required style="width: 100%; padding: 6px;" onchange="atualizarLimiteStock(this, ${JSON.stringify(stockPorPeca)})">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: #666; display: block; margin-bottom: 2px;">Qtd</label>
+                        <input type="number" class="form-control form-control-sm peca-qtd" placeholder="Qtd" min="1" value="1" required style="width: 100%; padding: 6px;">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function atualizarLimiteStock(selectEl, stockMap) {
+    const container = selectEl.closest('.pecas-item-container');
+    const inputQtd = container.querySelector('.peca-qtd');
+    const idSelecionado = selectEl.value;
+
+    if (idSelecionado && stockMap[idSelecionado] !== undefined) {
+        const stockMaximo = stockMap[idSelecionado];
+        inputQtd.max = stockMaximo;
+
+        if (parseInt(inputQtd.value) > stockMaximo) {
+            inputQtd.value = stockMaximo;
+        }
+    } else {
+        inputQtd.removeAttribute('max');
+    }
+}
+
+async function criarOrdemReparacao(event) {
+    event.preventDefault();
+
+    const mensagemDiv = document.getElementById('mensagemOrdem');
+    if (mensagemDiv) {
+        mensagemDiv.textContent = "A processar registo...";
+        mensagemDiv.className = "mensagem-ordem info";
+    }
 
     try {
-        // Compatível com o endpoint /repair-order do RF8
-        const response = await fetch('https://localhost:7085/api/OrdensReparacao/repair-order', {
+        const clienteId = document.getElementById('clienteIdInput').value;
+        const veiculoId = document.getElementById('veiculoIdInput').value;
+        const custoMaoDeObra = parseFloat(document.getElementById('custoMaoDeObraInput').value) || 0;
+        const descricao = document.getElementById('descricaoInput').value;
+
+        const pecasArray = [];
+        const containersPecas = document.querySelectorAll('.pecas-item-container');
+
+        for (const container of containersPecas) {
+            const selectPeca = container.querySelector('.peca-select');
+            const inputQtd = container.querySelector('.peca-qtd');
+
+            if (selectPeca && inputQtd && selectPeca.value) {
+                const pecaIdSelecionada = String(selectPeca.value).trim().toLowerCase();
+                const quantidadePedida = parseInt(inputQtd.value) || 1;
+
+                const pecaInfo = window.cachePecas.find(p => {
+                    const idOriginal = String(p.id || p.Id || '').trim().toLowerCase();
+                    return idOriginal === pecaIdSelecionada;
+                });
+
+                const stockDisponivel = pecaInfo ? Number(pecaInfo.stockDisponivel ?? pecaInfo.StockDisponivel ?? 0) : 0;
+
+                if (quantidadePedida > stockDisponivel) {
+                    const textoErro = `Erro: A quantidade pedida (${quantidadePedida}) excede o stock disponível (${stockDisponivel}) para a peça selecionada.`;
+
+                    if (mensagemDiv) {
+                        mensagemDiv.textContent = textoErro;
+                        mensagemDiv.className = "mensagem-ordem error";
+                    }
+
+                    alert(textoErro);
+                    return;
+                }
+
+                pecasArray.push({
+                    pecaId: selectPeca.value,
+                    quantidade: quantidadePedida
+                });
+            }
+        }
+
+        const payload = {
+            clienteId: clienteId,
+            veiculoId: parseInt(veiculoId) || 0,
+            custoMaoDeObra: custoMaoDeObra,
+            descricaoProblema: descricao,
+            dataConclusao: document.getElementById('dataConclusaoInput')?.value ? new Date(document.getElementById('dataConclusaoInput').value).toISOString() : new Date().toISOString(),
+            pecas: pecasArray
+        };
+
+        const response = await fetch('https://localhost:7085/api/ordensreparacao', {
             method: 'POST',
-            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(novaOrdem)
+            credentials: 'include',
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-            const mensagem = document.getElementById('mensagemOrdem');
+            if (pedidoIdAtualParaOrdem) {
+                await fetch(`https://localhost:7085/api/pedidos/${pedidoIdAtualParaOrdem}/analisar`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        estado: 'Completo',
+                        observacoes: 'Ordem de reparação criada com sucesso.'
+                    })
+                }).catch(err => console.error("Erro ao atualizar estado do pedido:", err));
+            }
 
-            mensagem.textContent = 'Ordem de reparação criada com sucesso!';
-            mensagem.className = 'mensagem-ordem sucesso';
+            if (mensagemDiv) {
+                mensagemDiv.textContent = "Ordem de reparação criada com sucesso!";
+                mensagemDiv.className = "mensagem-ordem success";
+            }
 
             setTimeout(() => {
                 fecharModalNovaOrdem();
-
-                document.getElementById('formNovaOrdem').reset();
-
-                mensagem.textContent = '';
-                mensagem.className = 'mensagem-ordem';
-
                 carregarDadosDashboard();
-            }, 3000);
+            }, 1200);
+
         } else {
-            const errData = await response.json().catch(() => ({}));
-            alert('Erro ao criar ordem: ' + (errData.mensagem || errData.message || 'Verifique o stock ou os dados inseridos.'));
+            const erroTexto = await response.text();
+            if (mensagemDiv) {
+                mensagemDiv.textContent = "Erro ao criar ordem: " + (erroTexto || response.statusText);
+                mensagemDiv.className = "mensagem-ordem error";
+            }
         }
-    } catch (err) {
-        console.error(err);
-        alert('Erro de comunicação ao submeter a ordem.');
+
+    } catch (error) {
+        console.error("Erro de rede ao submeter ordem:", error);
+        if (mensagemDiv) {
+            mensagemDiv.textContent = "Erro de ligação ao servidor.";
+            mensagemDiv.className = "mensagem-ordem error";
+        }
     }
 }
 
@@ -512,16 +1192,16 @@ async function carregarNomeUtilizador() {
         const data = await response.json();
 
         if (data.firstName) {
-            document.getElementById('welcomeMessage').textContent =
-                `Bem-vindo, ${data.firstName}!`;
+            const welcomeEl = document.getElementById('welcomeMessage');
+            if (welcomeEl) {
+                welcomeEl.textContent = `Bem-vindo, ${data.firstName}!`;
+            }
         }
 
     } catch (error) {
         console.error('Não foi possível carregar o nome do utilizador:', error);
     }
 }
-
-let ordemDetalheAtual = null;
 
 function formatarMoeda(valor) {
     return `${Number(valor || 0).toFixed(2)} €`;
@@ -533,45 +1213,68 @@ function formatarData(data) {
         : 'Ainda não concluída';
 }
 
+let ordemDetalheAtual = null;
+
 function fecharModalDetalhes() {
     document.getElementById('modalDetalhesOrdem').style.display = 'none';
 }
 
 function preencherDetalhesOrdem(ordem) {
-    document.getElementById('tituloDetalheOrdem').textContent =
-        `Detalhes da Ordem #${ordem.id}`;
+    const id = ordem.id ?? ordem.Id;
+    document.getElementById('tituloDetalheOrdem').textContent = `Detalhes da Ordem #${id}`;
 
-    document.getElementById('detalheCliente').textContent = ordem.clienteId;
-    document.getElementById('detalheVeiculo').textContent = `#${ordem.veiculoId}`;
-    document.getElementById('detalheDataEntrada').textContent =
-        formatarData(ordem.dataEntrada);
-    document.getElementById('detalheDataConclusao').textContent =
-        formatarData(ordem.dataConclusao);
-    document.getElementById('detalheMaoDeObra').textContent =
-        formatarMoeda(ordem.custoMaoDeObra);
-    document.getElementById('detalheCustoPecas').textContent =
-        formatarMoeda(ordem.custoPecas);
-    document.getElementById('detalheTotal').textContent =
-        formatarMoeda(ordem.valorTotal);
-    document.getElementById('detalheDescricao').textContent =
-        ordem.descricaoProblema;
+    document.getElementById('detalheCliente').textContent = ordem.clienteId ?? ordem.ClienteId ?? '-';
+    document.getElementById('detalheVeiculo').textContent = `#${ordem.veiculoId ?? ordem.VeiculoId ?? '-'}`;
+    document.getElementById('detalheDataEntrada').textContent = formatarData(ordem.dataEntrada ?? ordem.DataEntrada);
+    document.getElementById('detalheDataConclusao').textContent = formatarData(ordem.dataConclusao ?? ordem.DataConclusao);
 
-    document.getElementById('estadoOrdem').value = ordem.estado;
+    const maoDeObra = ordem.custoMaoDeObra ?? ordem.CustoMaoDeObra ?? 0;
+    const custoPecas = ordem.custoPecas ?? ordem.CustoPecas ?? 0;
+    const total = ordem.valorTotal ?? ordem.ValorTotal ?? (maoDeObra + custoPecas);
+
+    document.getElementById('detalheMaoDeObra').textContent = formatarMoeda(maoDeObra);
+    document.getElementById('detalheCustoPecas').textContent = formatarMoeda(custoPecas);
+    document.getElementById('detalheTotal').textContent = formatarMoeda(total);
+    document.getElementById('detalheDescricao').textContent = ordem.descricaoProblema ?? ordem.DescricaoProblema ?? '-';
+
+    const selectEstado = document.getElementById('estadoOrdem');
+    if (selectEstado) {
+        const grupoFormulario = selectEstado.closest('.form-group') || selectEstado.parentElement;
+        if (grupoFormulario) grupoFormulario.remove();
+    }
+
+    const btnGuardarEstado = document.querySelector('button[onclick="alterarEstadoOrdem()"]');
+    if (btnGuardarEstado) {
+        const containerBtn = btnGuardarEstado.closest('div') || btnGuardarEstado.parentElement;
+        if (containerBtn) containerBtn.remove();
+    }
 
     const listaPecas = document.getElementById('listaPecasDetalhe');
+    const pecasArray = ordem.pecas ?? ordem.Pecas ?? [];
 
-    if (!ordem.pecas || ordem.pecas.length === 0) {
+    if (!pecasArray || pecasArray.length === 0) {
         listaPecas.innerHTML = '<p>Sem peças registadas nesta ordem.</p>';
         return;
     }
 
-    listaPecas.innerHTML = ordem.pecas.map(peca => `
-<div class="peca-detalhe">
-    <span>${peca.pecaId}</span>
-    <span>${peca.quantidade} un. × ${formatarMoeda(peca.precoUnitario)}</span>
-    <strong>${formatarMoeda(peca.subtotal)}</strong>
-</div>
-`).join('');
+    listaPecas.innerHTML = pecasArray.map(pecaItem => {
+        const pId = pecaItem.pecaId ?? pecaItem.PecaId ?? '';
+        const qtd = pecaItem.quantidade ?? pecaItem.Quantidade ?? 0;
+        const precoU = pecaItem.precoUnitario ?? pecaItem.PrecoUnitario ?? 0;
+        const sub = pecaItem.subtotal ?? (qtd * precoU);
+
+        const pecaIdBuscado = String(pId).trim().toLowerCase();
+        const pecaInfo = window.cachePecas?.find(p => String(p.id || p.Id || '').trim().toLowerCase() === pecaIdBuscado);
+        const nomePeca = pecaInfo ? (pecaInfo.nome || pecaInfo.Nome) : pId;
+
+        return `
+            <div class="peca-detalhe" style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
+                <span><strong>${escaparHtml(nomePeca)}</strong></span>
+                <span>${qtd} un. × ${formatarMoeda(precoU)}</span>
+                <strong>${formatarMoeda(sub)}</strong>
+            </div>
+        `;
+    }).join('');
 }
 
 async function verDetalhesOrdem(id) {
@@ -621,8 +1324,7 @@ async function alterarEstadoOrdem() {
         const dados = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            mensagem.textContent =
-                dados.mensagem || 'Não foi possível alterar o estado.';
+            mensagem.textContent = dados.mensagem || 'Não foi possível alterar o estado.';
             mensagem.className = 'mensagem-ordem erro';
             return;
         }
@@ -676,8 +1378,7 @@ async function abrirEdicaoOrdem(id) {
             ordemEmEdicao.estado || 'Em Curso';
 
         document.getElementById('mensagemEditarOrdem').textContent = '';
-        document.getElementById('mensagemEditarOrdem').className =
-            'mensagem-ordem';
+        document.getElementById('mensagemEditarOrdem').className = 'mensagem-ordem';
 
         document.getElementById('modalEditarOrdem').style.display = 'flex';
     } catch (error) {
@@ -695,9 +1396,7 @@ async function guardarEdicaoOrdem(event) {
 
     const dadosAtualizados = {
         descricaoProblema: document.getElementById('editarDescricaoOrdem').value,
-        custoMaoDeObra: Number(
-            document.getElementById('editarMaoDeObraOrdem').value
-        ),
+        custoMaoDeObra: Number(document.getElementById('editarMaoDeObraOrdem').value),
         estado: document.getElementById('editarEstadoOrdem').value
     };
 
@@ -746,25 +1445,21 @@ function fecharModalAdmin() {
 
 function limparMensagemAdmin() {
     const mensagem = document.getElementById('mensagemAdmin');
-    mensagem.textContent = '';
-    mensagem.className = 'mensagem-ordem';
+    if (mensagem) {
+        mensagem.textContent = '';
+        mensagem.className = 'mensagem-ordem';
+    }
 }
 
 function abrirModalNovoAdmin() {
     document.getElementById('formAdmin').reset();
     document.getElementById('adminEdicaoId').value = '';
 
-    document.getElementById('tituloModalAdmin').textContent =
-        'Novo Administrador';
-
-    document.getElementById('labelPasswordAdmin').textContent =
-        'Password';
-
-    document.getElementById('ajudaPasswordAdmin').textContent =
-        'Obrigatória ao criar um administrador.';
+    document.getElementById('tituloModalAdmin').textContent = 'Novo Administrador';
+    document.getElementById('labelPasswordAdmin').textContent = 'Password';
+    document.getElementById('ajudaPasswordAdmin').textContent = 'Obrigatória ao criar um administrador.';
 
     limparMensagemAdmin();
-
     document.getElementById('modalAdmin').style.display = 'flex';
 }
 
@@ -781,17 +1476,11 @@ function abrirModalEditarAdmin(id) {
     document.getElementById('adminEmail').value = admin.email;
     document.getElementById('adminPassword').value = '';
 
-    document.getElementById('tituloModalAdmin').textContent =
-        'Editar Administrador';
-
-    document.getElementById('labelPasswordAdmin').textContent =
-        'Nova password';
-
-    document.getElementById('ajudaPasswordAdmin').textContent =
-        'Opcional. Deixa vazia para manter a password atual.';
+    document.getElementById('tituloModalAdmin').textContent = 'Editar Administrador';
+    document.getElementById('labelPasswordAdmin').textContent = 'Nova password';
+    document.getElementById('ajudaPasswordAdmin').textContent = 'Opcional. Deixa vazia para manter a password atual.';
 
     limparMensagemAdmin();
-
     document.getElementById('modalAdmin').style.display = 'flex';
 }
 
@@ -799,16 +1488,14 @@ async function guardarAdmin(event) {
     event.preventDefault();
 
     const id = document.getElementById('adminEdicaoId').value;
-    const primeiroNome =
-        document.getElementById('adminPrimeiroNome').value.trim();
+    const primeiroNome = document.getElementById('adminPrimeiroNome').value.trim();
     const email = document.getElementById('adminEmail').value.trim();
     const password = document.getElementById('adminPassword').value;
 
     const mensagem = document.getElementById('mensagemAdmin');
 
     if (!id && !password) {
-        mensagem.textContent =
-            'A password é obrigatória ao criar um administrador.';
+        mensagem.textContent = 'A password é obrigatória ao criar um administrador.';
         mensagem.className = 'mensagem-ordem erro';
         return;
     }
@@ -861,9 +1548,7 @@ async function guardarAdmin(event) {
         }, 1500);
     } catch (error) {
         console.error(error);
-
-        mensagem.textContent =
-            'Erro de comunicação ao guardar o administrador.';
+        mensagem.textContent = 'Erro de comunicação ao guardar o administrador.';
         mensagem.className = 'mensagem-ordem erro';
     }
 }
@@ -912,7 +1597,6 @@ function abrirModalNovoCliente() {
     document.getElementById('clienteEdicaoId').value = '';
     document.getElementById('formCliente').reset();
 
-    // Configurar campos de password como obrigatórios para novo registo
     document.getElementById('clientePassword').required = true;
     document.getElementById('labelPasswordCliente').style.display = 'block';
     document.getElementById('clientePassword').style.display = 'block';
@@ -935,7 +1619,6 @@ function abrirModalEditarCliente(id) {
     document.getElementById('clientePrimeiroNome').value = cliente.firstName || '';
     document.getElementById('clienteEmail').value = cliente.email || '';
 
-    // Na edição, a password geralmente não é obrigatória se não for alterada
     document.getElementById('clientePassword').value = '';
     document.getElementById('clientePassword').required = false;
 
@@ -951,7 +1634,6 @@ async function guardarCliente(e) {
     const password = document.getElementById('clientePassword').value;
     const confirmPassword = document.getElementById('clienteConfirmPassword').value;
 
-    // Validar no lado do cliente antes de enviar (opcional, mas útil)
     if (password && password !== confirmPassword) {
         alert('As passwords não coincidem.');
         return;
@@ -961,7 +1643,7 @@ async function guardarCliente(e) {
         firstName: firstName,
         email: email,
         password: password,
-        confirmPassword: confirmPassword, // <-- Enviado para o backend validar
+        confirmPassword: confirmPassword,
         role: "Cliente"
     };
 
@@ -1024,8 +1706,6 @@ async function eliminarCliente(id) {
         alert('Erro de comunicação ao eliminar o cliente.');
     }
 }
-function terminarSessao() {
-    window.location.href = 'https://localhost:7194/login.html';
-}
+
 carregarDadosDashboard();
 carregarNomeUtilizador();

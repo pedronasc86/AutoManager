@@ -55,6 +55,18 @@ namespace PartsCatalog.API.Repositories
             return true;
         }
 
+        public async Task<bool> AtivarAsync(Guid id)
+        {
+            var peca = await _context.Pecas.FindAsync(id);
+            if (peca == null)
+                return false;
+
+            peca.Ativo = true;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
         public async Task<bool> VerificarDisponibilidadeAsync(Guid id, int quantidade)
         {
             var peca = await _context.Pecas.FindAsync(id);

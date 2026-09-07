@@ -10,6 +10,7 @@ namespace PartsCatalog.API.Repositories
         Task AtualizarAsync(Peca peca);
         Task RemoverAsync(Guid id);
         Task<bool> InativarAsync(Guid id);
+        Task<bool> AtivarAsync(Guid id);
         Task<bool> VerificarDisponibilidadeAsync(Guid id, int quantidade);
     }
 }

@@ -14,7 +14,7 @@ namespace PartsCatalog.API.Services
 
         public IQueryable<Peca> GetPartsQuery()
         {
-            return _context.Pecas.AsQueryable();
+            return _context.Pecas.Where(p => p.Ativo).AsQueryable();
         }
     }
 }
