@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoManager - Área do Cliente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <style>
+        .form-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+            .form-card h3 {
+                margin-top: 0;
+                margin-bottom: 15px;
+                font-size: 1.1rem;
+                color: #333;
+            }
+
+            .form-card input, .form-card textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin-top: 5px;
+                font-family: inherit;
+            }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <div class="logo-area">
+                <i class="fa-solid fa-car-wrench"></i>
+                <span>AutoManager</span>
+            </div>
+            <ul class="menu">
+                <li class="active" data-section="dashboard">
+                    <a href="#" onclick="mostrarSecaoCliente('dashboard'); return false;">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </a>
+                </li>
+                <li data-section="pedidos">
+                    <a href="#" onclick="mostrarSecaoCliente('pedidos'); return false;">
+                        <i class="fa-solid fa-clipboard-list"></i> Pedidos de Reparação
+                    </a>
+                </li>
+                <li data-section="meus-veiculos">
+                    <a href="#" onclick="mostrarSecaoCliente('meus-veiculos'); return false;">
+                        <i class="fa-solid fa-car-side"></i> Os Meus Veículos
+                    </a>
+                </li>
+                <li data-section="pecas">
+                    <a href="#" onclick="mostrarSecaoCliente('pecas'); return false;">
+                        <i class="fa-solid fa-box-open"></i> Catálogo de Peças
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <button class="logout-btn" onclick="terminarSessao()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Terminar Sessão</button>
+    </aside>
+
+    <main>
+        <header>
+            <h1 id="tituloPagina">Portal do Cliente</h1>
+            <div class="user-profile">
+                <i class="fa-solid fa-user"></i>
+                <span id="welcomeMessage">Bem-vindo!</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- SECÇÃO DASHBOARD -->
+            <div id="secaoDashboard">
+                <!-- Cartões Resumo (KPIs) -->
+                <div id="dashboardCards" class="cards-grid">
+                    <div class="card total">
+                        <div class="card-info">
+                            <h3>Pedidos Totais</h3>
+                            <div class="number" id="totalOrdens">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-folder-open"></i></div>
+                    </div>
+                    <div class="card rejeitadas">
+                        <div class="card-info">
+                            <h3>Rejeitados</h3>
+                            <div class="number" id="rejeitadas">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                    </div>
+                    <div class="card curso">
+                        <div class="card-info">
+                            <h3>Em Análise</h3>
+                            <div class="number" id="emCurso">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-spinner"></i></div>
+                    </div>
+                    <div class="card concluidas">
+                        <div class="card-info">
+                            <h3>Aceites / Concluídos</h3>
+                            <div class="number" id="concluidas">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Pedidos Recentes no Dashboard -->
+                <section class="table-section">
+                    <div class="table-header">
+                        <h2><i class="fa-solid fa-clock-rotate-left"></i> Últimos Pedidos de Reparação</h2>
+                        <button class="btn-action" onclick="mostrarSecaoCliente('pedidos'); return false;">
+                            Ver Todos <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>ID Veículo</th>
+                                <th>Problema Reportado</th>
+                                <th>Estado</th>
+                                <th>Observações da Oficina</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaDashboardPedidos">
+                            <!-- Preenchido via JavaScript (dashboardCliente.js) -->
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- SECÇÃO PEDIDOS DE REPARAÇÃO -->
+            <section id="secaoPedidos" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Pedidos de Reparação</h2>
+                </div>
+
+                <div class="form-card">
+                    <h3>Criar Novo Pedido</h3>
+                    <form id="formNovoPedido" onsubmit="submeterPedido(event)">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="veiculoIdPedido" style="font-weight: 500;">ID do Veículo <small style="color: #666; font-weight: normal;">(Veja o ID no separador 'Os Meus Veículos')</small></label>
+                            <input type="number" id="veiculoIdPedido" required placeholder="Ex: 1">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label for="descricaoProblema" style="font-weight: 500;">Descrição do Problema</label>
+                            <textarea id="descricaoProblema" rows="3" required placeholder="Descreva os sintomas ou o problema da viatura..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-new" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-paper-plane"></i> Enviar Pedido
+                        </button>
+                    </form>
+                </div>
+
+                <div class="table-header">
+                    <h3>Histórico de Pedidos</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>ID Veículo</th>
+                            <th>Problema Reportado</th>
+                            <th>Estado</th>
+                            <th>Observações da Oficina</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMeusPedidos">
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- SECÇÃO OS MEUS VEÍCULOS -->
+            <section id="secaoMeusVeiculos" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Os Meus Veículos</h2>
+                    <button class="btn-new" onclick="abrirModalVeiculo()">
+                        <i class="fa-solid fa-plus"></i> Adicionar Novo Carro
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Matrícula</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Ano</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMeusVeiculos"></tbody>
+                </table>
+            </section>
+
+            <!-- SECÇÃO CATÁLOGO DE PEÇAS -->
+            <section id="secaoPecas" class="table-section view-hidden">
+                <div class="table-header">
+                    <h2>Catálogo de Peças</h2>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Referência</th>
+                            <th>Nome</th>
+                            <th>Categoria</th>
+                            <th>Compatibilidade</th>
+                            <th>Preço Unitário</th>
+                            <th>Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaPecasDisponiveis"></tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL NOVO VEÍCULO -->
+    <div id="modalNovoVeiculo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Novo Carro</h3>
+                <button class="close-btn" onclick="fecharModalVeiculo()">&times;</button>
+            </div>
+            <form id="formNovoVeiculo" onsubmit="registarVeiculo(event)">
+                <div class="form-group">
+                    <label for="matriculaInput">Matrícula</label>
+                    <input type="text" id="matriculaInput" required placeholder="Ex: 00-AA-00">
+                </div>
+                <div class="form-group">
+                    <label for="marcaInput">Marca</label>
+                    <input type="text" id="marcaInput" required placeholder="Ex: Renault">
+                </div>
+                <div class="form-group">
+                    <label for="modeloInput">Modelo</label>
+                    <input type="text" id="modeloInput" required placeholder="Ex: Clio">
+                </div>
+                <div class="form-group">
+                    <label for="anoInput">Ano</label>
+                    <input type="number" id="anoInput" required placeholder="Ex: 2020">
+                </div>
+                <button type="submit" class="btn-submit-modal">Guardar Veículo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR VEÍCULO -->
+    <div id="modalEditarVeiculo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Veículo</h3>
+                <button class="close-btn" onclick="fecharModalEditarVeiculo()">&times;</button>
+            </div>
+            <form id="formEditarVeiculo" onsubmit="guardarEdicaoVeiculo(event)">
+                <input type="hidden" id="editVeiculoId">
+                <div class="form-group">
+                    <label for="editMatriculaInput">Matrícula</label>
+                    <input type="text" id="editMatriculaInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="editMarcaInput">Marca</label>
+                    <input type="text" id="editMarcaInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="editModeloInput">Modelo</label>
+                    <input type="text" id="editModeloInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAnoInput">Ano</label>
+                    <input type="number" id="editAnoInput" required>
+                </div>
+                <button type="submit" class="btn-submit-modal">Guardar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/dashboardCliente.js"></script>
+</body>
+</html>

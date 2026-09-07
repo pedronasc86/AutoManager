@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Identity.API.Controllers
 {
@@ -128,11 +129,12 @@ namespace Identity.API.Controllers
                 Expires = DateTimeOffset.UtcNow.AddHours(8)
             });
 
-            return Ok(new AuthResponseDto
+            return Ok(new
             {
-                IsSuccess = true,
-                Message = "Login efetuado com sucesso!",
-                Expiration = DateTime.UtcNow.AddHours(8)
+                isSuccess = true,
+                message = "Login efetuado com sucesso!",
+                token = token,
+                expiration = DateTime.UtcNow.AddHours(8)
             });
         }
 
@@ -152,10 +154,10 @@ namespace Identity.API.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
 
-            return Ok(new
+            return Ok(new CurrentUserDto
             {
-                firstName = user.name ?? string.Empty,
-                role = roles.FirstOrDefault() ?? "Cliente"
+                FirstName = user.name ?? string.Empty,
+                Role = roles.FirstOrDefault() ?? string.Empty
             });
         }
 

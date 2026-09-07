@@ -10,6 +10,7 @@ namespace WorkShop.API.Data
         }
 
         public DbSet<Veiculo> Veiculos { get; set; }
+        public DbSet<PedidoReparacao> PedidosReparacao { get; set; }
         public DbSet<OrdemReparacao> OrdensReparacao { get; set; }
         public DbSet<PecaAplicadaOrdem> PecasAplicadasOrdem { get; set; }
 
