@@ -492,7 +492,13 @@
                     <input type="password" id="adminPassword" minlength="8" autocomplete="new-password" placeholder="Ex: Admin123!">
                     <small id="ajudaPasswordAdmin">Obrigatória ao criar um administrador.</small>
                 </div>
-
+                <div class="form-group">
+                    <label for="adminConfirmPassword">Confirmar Password</label>
+                    <input type="password" id="adminConfirmPassword" class="form-control" placeholder="Confirme a password" />
+                </div>
+                <button type="submit" class="btn-submit-modal">
+                    Guardar Administrador
+                </button>
                 <button type="submit" class="btn-submit-modal">Guardar Administrador</button>
                 <div id="mensagemAdmin" class="mensagem-ordem"></div>
             </form>
@@ -514,12 +520,10 @@
                     <label for="referenciaPeca">Referência</label>
                     <input type="text" id="referenciaPeca" required placeholder="Ex: REF-12345">
                 </div>
-
                 <div class="form-group">
                     <label for="nomePeca">Nome</label>
                     <input type="text" id="nomePeca" required placeholder="Ex: Pastilhas de Travão">
                 </div>
-
                 <div class="form-group">
                     <label for="categoriaPeca">Categoria</label>
                     <input type="text" id="categoriaPeca" required placeholder="Ex: Travões">
@@ -548,6 +552,7 @@
 
     <!-- MODAL PARA CRIAR / EDITAR CLIENTE -->
     <div id="modalCliente" class="modal">
+
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="tituloModalCliente">Novo Cliente</h3>
