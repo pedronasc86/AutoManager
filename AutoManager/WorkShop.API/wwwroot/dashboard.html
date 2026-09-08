@@ -128,22 +128,22 @@
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
             <section id="secaoOrdens" class="table-section">
                 <!--<div class="table-header">
-            <h2>Ordens de Reparação</h2>
-            <button id="btnNovaOrdem" class="btn-new view-hidden"
-                    onclick="abrirModalNovaOrdem()">
-                <i class="fa-solid fa-plus"></i> Nova Ordem
-            </button>
-        </div>
-        <div class="table-filter-row">
-            <input type="number" id="filtroVeiculoId"
-                   min="1" placeholder="ID do veículo">
-            <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-                <i class="fa-solid fa-filter"></i> Filtrar
-            </button>
-            <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-                Limpar
-            </button>
-        </div>-->
+                    <h2>Ordens de Reparação</h2>
+                    <button id="btnNovaOrdem" class="btn-new view-hidden"
+                            onclick="abrirModalNovaOrdem()">
+                        <i class="fa-solid fa-plus"></i> Nova Ordem
+                    </button>
+                </div>
+                <div class="table-filter-row">
+                    <input type="number" id="filtroVeiculoId"
+                           min="1" placeholder="ID do veículo">
+                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                        <i class="fa-solid fa-filter"></i> Filtrar
+                    </button>
+                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                        Limpar
+                    </button>
+                </div>-->
                 <div class="table-header orders-header">
                     <div>
                         <p class="section-eyebrow">
@@ -248,7 +248,12 @@
             <section id="secaoVeiculos" class="table-section view-hidden">
                 <div class="table-header">
                     <h2>Veículos</h2>
+
+                    <button class="btn-new" onclick="abrirModalNovoVeiculo()">
+                        <i class="fa-solid fa-plus"></i> Novo Veículo
+                    </button>
                 </div>
+
                 <table>
                     <thead>
                         <tr>
@@ -258,8 +263,10 @@
                             <th>Modelo</th>
                             <th>Ano</th>
                             <th>ID Cliente</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
+
                     <tbody id="tabelaVeiculos"></tbody>
                 </table>
             </section>
@@ -531,6 +538,54 @@
                 </div>
                 <button type="submit" class="btn-submit-modal">Guardar Administrador</button>
                 <div id="mensagemAdmin" class="mensagem-ordem"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PARA CRIAR / EDITAR VEÍCULOS -->
+    <div id="modalVeiculo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tituloModalVeiculo">Registar Novo Veículo</h3>
+
+                <button class="close-btn" onclick="fecharModalVeiculo()">
+                    &times;
+                </button>
+            </div>
+
+            <form id="formVeiculo" onsubmit="guardarVeiculo(event)">
+                <input type="hidden" id="veiculoEdicaoId">
+
+                <div class="form-group">
+                    <label for="matriculaVeiculo">Matrícula</label>
+                    <input type="text" id="matriculaVeiculo" required
+                           placeholder="Ex: AA-00-BB">
+                </div>
+
+                <div class="form-group">
+                    <label for="marcaVeiculo">Marca</label>
+                    <input type="text" id="marcaVeiculo" required
+                           placeholder="Ex: Volkswagen">
+                </div>
+
+                <div class="form-group">
+                    <label for="modeloVeiculo">Modelo</label>
+                    <input type="text" id="modeloVeiculo" required
+                           placeholder="Ex: Golf">
+                </div>
+
+                <div class="form-group">
+                    <label for="anoVeiculo">Ano</label>
+                    <input type="number" id="anoVeiculo" required
+                           min="1900" max="2100"
+                           placeholder="Ex: 2022">
+                </div>
+
+                <button type="submit" class="btn-submit-modal">
+                    Guardar Veículo
+                </button>
+
+                <div id="mensagemVeiculo" class="mensagem-ordem"></div>
             </form>
         </div>
     </div>

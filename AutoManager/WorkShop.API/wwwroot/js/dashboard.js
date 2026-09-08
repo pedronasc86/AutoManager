@@ -1776,3 +1776,20 @@ async function eliminarCliente(id) {
 
 carregarDadosDashboard();
 carregarNomeUtilizador();
+
+// Abre o modal de veículo, seguindo o mesmo padrão do modal de Peças.
+function abrirModalNovoVeiculo() {
+    document.getElementById('tituloModalVeiculo').textContent =
+        'Registar Novo Veículo';
+
+    document.getElementById('formVeiculo').reset();
+    document.getElementById('veiculoEdicaoId').value = '';
+    document.getElementById('mensagemVeiculo').textContent = '';
+
+    document.getElementById('modalVeiculo').style.display = 'flex';
+}
+
+// Fecha o modal de veículo, seguindo o mesmo padrão do modal de Peças.
+function fecharModalVeiculo() {
+    document.getElementById('modalVeiculo').style.display = 'none';
+}
