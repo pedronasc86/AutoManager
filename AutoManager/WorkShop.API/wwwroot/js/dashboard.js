@@ -322,7 +322,7 @@ async function carregarPecas() {
         const selectCategoria = document.getElementById('filtroPecaCategoria');
         const selectEstado = document.getElementById('filtroPecaEstado');
 
-        let url = 'http://localhost:5039/api/pecas/admin/todas';
+        let url = 'https://localhost:7039/api/pecas/admin/todas';
         let queryParams = [];
 
         if (inputPesquisa && inputPesquisa.value.trim()) {
@@ -346,6 +346,7 @@ async function carregarPecas() {
 
         const response = await fetch(url, {
             method: 'GET',
+            credentials: 'include',
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
                 'Content-Type': 'application/json'
@@ -360,9 +361,6 @@ async function carregarPecas() {
         const pecas = Array.isArray(data) ? data : (data.value || data.itens || []);
 
         atualizarResumoPecas(pecas);
-
-        // Se a API falhar, os cartões não mostram valores antigos.
-        atualizarResumoPecas([]);
 
         if (pecas.length === 0) {
             mostrarTabelaVazia(
@@ -417,6 +415,9 @@ async function carregarPecas() {
             8,
             'Erro ao carregar as peças.'
         );
+
+        // Se a API falhar, os cartões não mostram valores antigos.
+        atualizarResumoPecas([]);
     }
 }
 
@@ -446,8 +447,9 @@ async function abrirModalEditarPeca(id) {
     try {
         const token = localStorage.getItem('token');
 
-        const response = await fetch(`http://localhost:5039/api/pecas/${id}`, {
+        const response = await fetch(`https://localhost:7039/api/pecas/${id}`, {
             method: 'GET',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': token ? `Bearer ${token}` : ''
@@ -513,14 +515,14 @@ async function guardarPeca(event) {
     };
 
     const url = idEdicao
-        ? `http://localhost:5039/api/pecas/${idEdicao}`
-        : 'http://localhost:5039/api/pecas';
+        ? `https://localhost:7039/api/pecas/${idEdicao}`
+        : 'https://localhost:7039/api/pecas';
 
     const method = idEdicao ? 'PUT' : 'POST';
 
     try {
         const token = localStorage.getItem('token');
-        console.log('A enviar pedido:', { url, method, token, dadosPeca });
+        //console.log('A enviar pedido:', { url, method, token, dadosPeca });
 
         const headers = {
             'Content-Type': 'application/json'
@@ -532,6 +534,7 @@ async function guardarPeca(event) {
 
         const response = await fetch(url, {
             method: method,
+            credentials: 'include',
             headers: headers,
             body: JSON.stringify(dadosPeca)
         });
@@ -558,8 +561,9 @@ async function alternarInativarPeca(id, estadoAtual) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5039/api/pecas/${id}/${acao}`, {
+        const response = await fetch(`https://localhost:7039/api/pecas/${id}/${acao}`, {
             method: 'PATCH',
+            credentials: 'include',
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
                 'Content-Type': 'application/json'
@@ -585,8 +589,9 @@ async function eliminarPeca(id) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5039/api/pecas/${id}`, {
+        const response = await fetch(`https://localhost:7039/api/pecas/${id}`, {
             method: 'DELETE',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': token ? `Bearer ${token}` : ''
@@ -1117,8 +1122,9 @@ async function carregarPecasParaCache() {
     try {
         const token = localStorage.getItem('token');
 
-        const response = await fetch('http://localhost:5039/api/pecas', {
+        const response = await fetch('https://localhost:7039/api/pecas', {
             method: 'GET',
+            credentials: 'include',
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
                 'Content-Type': 'application/json'
