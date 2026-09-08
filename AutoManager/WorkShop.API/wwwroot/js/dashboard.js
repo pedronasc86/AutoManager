@@ -52,7 +52,8 @@ let secaoAtual = 'dashboard';
 function mostrarSecao(secao) {
     secaoAtual = secao;
 
-    const mostrarDashboard = secao === 'dashboard';
+    //const mostrarDashboard = secao === 'dashboard';
+    const mostrarDashboard = secao === 'dashboard' || secao === 'ordens';
     const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
 
     const btnNovaOrdemEl = document.getElementById('btnNovaOrdem');
@@ -73,6 +74,13 @@ function mostrarSecao(secao) {
     const secaoPecasEl = document.getElementById('secaoPecas');
     if (secaoPecasEl) {
         secaoPecasEl.classList.toggle('view-hidden', secao !== 'pecas');
+    }
+
+    // Os cartões das peças só aparecem ao abrir a secção "Peças".
+    const pecasCardsEl = document.getElementById('pecasCards');
+
+    if (pecasCardsEl) {
+        pecasCardsEl.classList.toggle('view-hidden', secao !== 'pecas');
     }
 
     const tituloPaginaEl = document.getElementById('tituloPagina');
@@ -287,6 +295,23 @@ async function guardarAnalisePedido(event) {
     }
 }
 
+// Atualiza os três cartões de resumo do inventário.
+function atualizarResumoPecas(pecas) {
+    const total = pecas.length;
+
+    // Uma peça está em stock se tiver pelo menos uma unidade disponível.
+    const emStock = pecas.filter(peca => {
+        const stock = Number(peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+        return stock > 0;
+    }).length;
+
+    const foraStock = total - emStock;
+
+    document.getElementById('totalPecas').textContent = total;
+    document.getElementById('pecasEmStock').textContent = emStock;
+    document.getElementById('pecasForaStock').textContent = foraStock;
+}
+
 async function carregarPecas() {
     const tabela = document.getElementById('tabelaPecas');
     if (!tabela) return;
@@ -333,6 +358,11 @@ async function carregarPecas() {
 
         const data = await response.json();
         const pecas = Array.isArray(data) ? data : (data.value || data.itens || []);
+
+        atualizarResumoPecas(pecas);
+
+        // Se a API falhar, os cartões não mostram valores antigos.
+        atualizarResumoPecas([]);
 
         if (pecas.length === 0) {
             mostrarTabelaVazia(

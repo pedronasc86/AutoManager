@@ -128,22 +128,22 @@
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
             <section id="secaoOrdens" class="table-section">
                 <!--<div class="table-header">
-        <h2>Ordens de Reparação</h2>
-        <button id="btnNovaOrdem" class="btn-new view-hidden"
-                onclick="abrirModalNovaOrdem()">
-            <i class="fa-solid fa-plus"></i> Nova Ordem
-        </button>
-    </div>
-    <div class="table-filter-row">
-        <input type="number" id="filtroVeiculoId"
-               min="1" placeholder="ID do veículo">
-        <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-            <i class="fa-solid fa-filter"></i> Filtrar
-        </button>
-        <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-            Limpar
-        </button>
-    </div>-->
+            <h2>Ordens de Reparação</h2>
+            <button id="btnNovaOrdem" class="btn-new view-hidden"
+                    onclick="abrirModalNovaOrdem()">
+                <i class="fa-solid fa-plus"></i> Nova Ordem
+            </button>
+        </div>
+        <div class="table-filter-row">
+            <input type="number" id="filtroVeiculoId"
+                   min="1" placeholder="ID do veículo">
+            <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+            <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                Limpar
+            </button>
+        </div>-->
                 <div class="table-header orders-header">
                     <div>
                         <p class="section-eyebrow">
@@ -265,6 +265,39 @@
             </section>
 
             <!-- SECÇÃO DE PEÇAS ATUALIZADA PARA O CRUD -->
+            <!-- Cartões de estatísticas das peças: reutiliza o estilo do Dashboard -->
+            <div id="pecasCards" class="cards-grid view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Peças</h3>
+                        <div class="number" id="totalPecas">0</div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                </div>
+
+                <div class="card concluidas">
+                    <div class="card-info">
+                        <h3>Peças em Stock</h3>
+                        <div class="number" id="pecasEmStock">0</div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <div class="card rejeitadas">
+                    <div class="card-info">
+                        <h3>Fora de Stock</h3>
+                        <div class="number" id="pecasForaStock">0</div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
             <section id="secaoPecas" class="table-section view-hidden">
                 <div class="table-header">
                     <h2>Peças</h2>
