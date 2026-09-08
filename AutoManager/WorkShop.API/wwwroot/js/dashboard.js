@@ -663,6 +663,17 @@ async function carregarVeiculos() {
                 <td>${escaparHtml(veiculo.modelo)}</td>
                 <td>${veiculo.ano}</td>
                 <td>${escaparHtml(veiculo.clienteId)}</td>
+                <td>
+                    <button class="btn-action btn-edit"
+                            onclick="abrirModalEditarVeiculo(${veiculo.id})">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+
+                    <button class="btn-action btn-delete"
+                            onclick="eliminarVeiculo(${veiculo.id})">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                </td>
             </tr>
         `).join('');
     } catch (error) {
@@ -677,39 +688,145 @@ async function carregarVeiculos() {
 
 let clientesCarregados = []; // Declara no topo do teu ficheiro ou escopo global
 
+const clientesPorPagina = 5;
+let paginaAtualClientes = 1;
+let totalPaginasClientes = 1;
+
+function mudarPaginaClientes(direcao) {
+    const novaPagina = paginaAtualClientes + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasClientes) {
+        return;
+    }
+
+    paginaAtualClientes = novaPagina;
+    carregarClientes();
+}
+
+//async function carregarClientes() {
+//    try {
+//        const response = await fetch('https://localhost:7194/api/Auth/users', {
+//            credentials: 'include'
+//        });
+
+//        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
+
+//        const utilizadores = await response.json();
+
+//        // Filtra e guarda na variável global
+//        clientesCarregados = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
+
+//        const tabelaClientes = document.getElementById('tabelaClientesBody');
+//        tabelaClientes.innerHTML = clientesCarregados.map(cliente => `
+//            <tr>
+//                <td class="user-id">${escaparHtml(cliente.id)}</td>
+//                <td>${escaparHtml(cliente.firstName)}</td>
+//                <td>${escaparHtml(cliente.email)}</td>
+//                <td>${escaparHtml(cliente.role)}</td>
+//                <td>
+//                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
+//                        <i class="fa-solid fa-pen"></i> Editar
+//                    </button>
+//                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
+//                        <i class="fa-solid fa-trash"></i> Eliminar
+//                    </button>
+//                </td>
+//            </tr>
+//        `).join('');
+
+//    } catch (error) {
+//        console.error("Erro ao carregar clientes:", error);
+//    }
+//}
+
 async function carregarClientes() {
+    const tabelaClientes = document.getElementById('tabelaClientesBody');
+
+    if (!tabelaClientes) {
+        return;
+    }
+
+    tabelaClientes.innerHTML = '';
+
     try {
         const response = await fetch('https://localhost:7194/api/Auth/users', {
             credentials: 'include'
         });
 
-        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar utilizadores.');
+        }
 
         const utilizadores = await response.json();
 
-        // Filtra e guarda na variável global
-        clientesCarregados = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
+        // Apenas mostra utilizadores cujo perfil é Cliente.
+        clientesCarregados = utilizadores.filter(
+            utilizador => utilizador.role?.toLowerCase() === 'cliente'
+        );
 
-        const tabelaClientes = document.getElementById('tabelaClientesBody');
-        tabelaClientes.innerHTML = clientesCarregados.map(cliente => `
-            <tr>
-                <td class="user-id">${escaparHtml(cliente.id)}</td>
-                <td>${escaparHtml(cliente.firstName)}</td>
-                <td>${escaparHtml(cliente.email)}</td>
-                <td>${escaparHtml(cliente.role)}</td>
-                <td>
-                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
-                        <i class="fa-solid fa-pen"></i> Editar
-                    </button>
-                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
-                        <i class="fa-solid fa-trash"></i> Eliminar
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        totalPaginasClientes = Math.max(
+            1,
+            Math.ceil(clientesCarregados.length / clientesPorPagina)
+        );
+
+        // Evita ficar numa página que deixou de existir após eliminar um cliente.
+        if (paginaAtualClientes > totalPaginasClientes) {
+            paginaAtualClientes = totalPaginasClientes;
+        }
+
+        const inicio = (paginaAtualClientes - 1) * clientesPorPagina;
+        const clientesDaPagina = clientesCarregados.slice(
+            inicio,
+            inicio + clientesPorPagina
+        );
+
+        if (clientesDaPagina.length === 0) {
+            mostrarTabelaVazia(
+                'tabelaClientesBody',
+                5,
+                'Não existem clientes registados.'
+            );
+        } else {
+            tabelaClientes.innerHTML = clientesDaPagina.map(cliente => `
+                <tr>
+                    <td class="user-id">${escaparHtml(cliente.id)}</td>
+                    <td>${escaparHtml(cliente.firstName)}</td>
+                    <td>${escaparHtml(cliente.email)}</td>
+                    <td>${escaparHtml(cliente.role)}</td>
+
+                    <td>
+                        <button class="btn-action btn-edit"
+                                onclick="abrirModalEditarCliente('${cliente.id}')">
+                            <i class="fa-solid fa-pen"></i> Editar
+                        </button>
+
+                        <button class="btn-action btn-delete"
+                                onclick="eliminarCliente('${cliente.id}')">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Atualiza os controlos, reutilizando o visual das Ordens.
+        document.getElementById('infoPaginaClientes').textContent =
+            `Página ${paginaAtualClientes} de ${totalPaginasClientes}`;
+
+        document.getElementById('btnPaginaAnteriorClientes').disabled =
+            paginaAtualClientes === 1;
+
+        document.getElementById('btnPaginaSeguinteClientes').disabled =
+            paginaAtualClientes === totalPaginasClientes;
 
     } catch (error) {
-        console.error("Erro ao carregar clientes:", error);
+        console.error('Erro ao carregar clientes:', error);
+
+        mostrarTabelaVazia(
+            'tabelaClientesBody',
+            5,
+            'Erro ao carregar os clientes.'
+        );
     }
 }
 
@@ -1776,3 +1893,125 @@ async function eliminarCliente(id) {
 
 carregarDadosDashboard();
 carregarNomeUtilizador();
+
+// Abre o modal de veículo, seguindo o mesmo padrão do modal de Peças.
+function abrirModalNovoVeiculo() {
+    document.getElementById('tituloModalVeiculo').textContent =
+        'Registar Novo Veículo';
+
+    document.getElementById('formVeiculo').reset();
+    document.getElementById('veiculoEdicaoId').value = '';
+    document.getElementById('mensagemVeiculo').textContent = '';
+
+    document.getElementById('modalVeiculo').style.display = 'flex';
+}
+
+// Fecha o modal de veículo, seguindo o mesmo padrão do modal de Peças.
+function fecharModalVeiculo() {
+    document.getElementById('modalVeiculo').style.display = 'none';
+}
+
+// Guarda um veículo novo ou atualiza um veículo existente sem recarregar a página.
+async function guardarVeiculo(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('veiculoEdicaoId').value;
+
+    const dadosVeiculo = {
+        matricula: document.getElementById('matriculaVeiculo').value.trim().toUpperCase(),
+        marca: document.getElementById('marcaVeiculo').value.trim(),
+        modelo: document.getElementById('modeloVeiculo').value.trim(),
+        ano: Number(document.getElementById('anoVeiculo').value)
+    };
+
+    const url = id
+        ? `/api/Veiculos/${id}`
+        : '/api/Veiculos';
+
+    try {
+        const response = await fetch(url, {
+            method: id ? 'PUT' : 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosVeiculo)
+        });
+
+        if (!response.ok) {
+            const erro = await response.json().catch(() => null);
+
+            throw new Error(
+                erro?.message || 'Não foi possível guardar o veículo.'
+            );
+        }
+
+        fecharModalVeiculo();
+        await carregarVeiculos();
+
+        alert(id
+            ? 'Veículo atualizado com sucesso!'
+            : 'Veículo registado com sucesso!');
+
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+    }
+
+    return false;
+}
+
+// Abre o mesmo modal de Veículos, preenchido para edição.
+async function abrirModalEditarVeiculo(id) {
+    try {
+        const response = await fetch(`/api/Veiculos/${id}`, {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar o veículo.');
+        }
+
+        const veiculo = await response.json();
+
+        document.getElementById('veiculoEdicaoId').value = veiculo.id;
+        document.getElementById('matriculaVeiculo').value = veiculo.matricula;
+        document.getElementById('marcaVeiculo').value = veiculo.marca;
+        document.getElementById('modeloVeiculo').value = veiculo.modelo;
+        document.getElementById('anoVeiculo').value = veiculo.ano;
+
+        document.getElementById('tituloModalVeiculo').textContent =
+            'Editar Veículo';
+
+        document.getElementById('modalVeiculo').style.display = 'flex';
+
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+    }
+}
+
+// Elimina o veículo usando o endpoint que já existe na API.
+async function eliminarVeiculo(id) {
+    if (!confirm('Tens a certeza que queres eliminar este veículo?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/Veiculos/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Não foi possível eliminar o veículo.');
+        }
+
+        await carregarVeiculos();
+        alert('Veículo eliminado com sucesso!');
+
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+    }
+}
