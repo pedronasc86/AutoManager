@@ -327,6 +327,22 @@
                     </thead>
                     <tbody id="tabelaPecas"></tbody>
                 </table>
+
+                <div class="paginacao" id="paginacaoPecas">
+                    <button id="btnPaginaAnteriorPecas"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPecas(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaPecas">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguintePecas"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPecas(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <section id="secaoClientes" class="table-section view-hidden">

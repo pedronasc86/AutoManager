@@ -312,6 +312,33 @@ function atualizarResumoPecas(pecas) {
     document.getElementById('pecasForaStock').textContent = foraStock;
 }
 
+// Paginação das peças
+const pecasPorPagina = 5;
+let paginaAtualPecas = 1;
+let totalPaginasPecas = 1;
+
+function mudarPaginaPecas(direcao) {
+    const novaPagina = paginaAtualPecas + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasPecas) {
+        return;
+    }
+
+    paginaAtualPecas = novaPagina;
+    carregarPecas();
+}
+
+function atualizarPaginacaoPecas() {
+    document.getElementById('infoPaginaPecas').textContent =
+        `Página ${paginaAtualPecas} de ${totalPaginasPecas}`;
+
+    document.getElementById('btnPaginaAnteriorPecas').disabled =
+        paginaAtualPecas === 1;
+
+    document.getElementById('btnPaginaSeguintePecas').disabled =
+        paginaAtualPecas === totalPaginasPecas;
+}
+
 async function carregarPecas() {
     const tabela = document.getElementById('tabelaPecas');
     if (!tabela) return;
@@ -362,7 +389,26 @@ async function carregarPecas() {
 
         atualizarResumoPecas(pecas);
 
-        if (pecas.length === 0) {
+        totalPaginasPecas = Math.max(
+            1,
+            Math.ceil(pecas.length / pecasPorPagina)
+        );
+
+        // Evita ficar numa página inexistente depois de eliminar uma peça.
+        if (paginaAtualPecas > totalPaginasPecas) {
+            paginaAtualPecas = totalPaginasPecas;
+        }
+
+        const inicio = (paginaAtualPecas - 1) * pecasPorPagina;
+
+        const pecasDaPagina = pecas.slice(
+            inicio,
+            inicio + pecasPorPagina
+        );
+
+        atualizarPaginacaoPecas();
+
+        if (pecasDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaPecas',
                 7,
@@ -371,7 +417,7 @@ async function carregarPecas() {
             return;
         }
 
-        tabela.innerHTML = pecas.map(peca => {
+        tabela.innerHTML = pecasDaPagina.map(peca => {
             const id = peca.id ?? peca.Id;
             const referencia = escaparHtml(peca.referenciaPeca ?? peca.ReferenciaPeca ?? '-');
             const nome = escaparHtml(peca.nome ?? peca.Nome ?? '-');
@@ -422,6 +468,7 @@ async function carregarPecas() {
 }
 
 function aplicarFiltrosPecas() {
+    paginaAtualPecas = 1;
     carregarPecas();
 }
 
@@ -429,6 +476,8 @@ function limparFiltrosPecas() {
     if (document.getElementById('filtroPecaPesquisa')) document.getElementById('filtroPecaPesquisa').value = '';
     if (document.getElementById('filtroPecaCategoria')) document.getElementById('filtroPecaCategoria').value = '';
     if (document.getElementById('filtroPecaEstado')) document.getElementById('filtroPecaEstado').value = '';
+
+    paginaAtualPecas = 1;
     carregarPecas();
 }
 
