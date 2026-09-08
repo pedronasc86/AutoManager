@@ -88,11 +88,82 @@ namespace WorkShop.API
 
             app.UseHttpsRedirection();
 
-            app.UseDefaultFiles(); // Procura ficheiros padrão na wwwroot
-            app.UseStaticFiles();  // Permite servir ficheiros estáticos (HTML, JS, CSS)
-
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // Protege as páginas HTML conforme o perfil autenticado.
+            app.Use(async (context, next) =>
+            {
+                var caminho = context.Request.Path.Value?.ToLowerInvariant();
+                var autenticado = context.User.Identity?.IsAuthenticated == true;
+
+                var eStaff = autenticado &&
+                    (
+                        context.User.IsInRole("Admin") ||
+                        context.User.IsInRole("admin") ||
+                        context.User.IsInRole("Mecanico") ||
+                        context.User.IsInRole("mecanico")
+                    );
+
+                var eCliente = autenticado &&
+                    (
+                        context.User.IsInRole("Cliente") ||
+                        context.User.IsInRole("cliente")
+                    );
+
+                // Só Admin e Mecânico podem abrir o dashboard administrativo.
+                if (caminho == "/dashboard.html")
+                {
+                    if (!autenticado)
+                    {
+                        context.Response.Redirect(
+                            "https://localhost:7194/login.html"
+                        );
+                        return;
+                    }
+
+                    if (!eStaff)
+                    {
+                        context.Response.Redirect(
+                            "https://localhost:7085/dashboardCliente.html"
+                        );
+                        return;
+                    }
+                }
+
+                // Um Admin/Mecânico não usa a página exclusiva de Cliente.
+                if (caminho == "/dashboardcliente.html")
+                {
+                    if (!autenticado)
+                    {
+                        context.Response.Redirect(
+                            "https://localhost:7194/login.html"
+                        );
+                        return;
+                    }
+
+                    if (eStaff)
+                    {
+                        context.Response.Redirect(
+                            "https://localhost:7085/dashboard.html"
+                        );
+                        return;
+                    }
+
+                    if (!eCliente)
+                    {
+                        context.Response.Redirect(
+                            "https://localhost:7194/login.html"
+                        );
+                        return;
+                    }
+                }
+
+                await next();
+            });
+
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.MapControllers();
             app.MapHealthChecks("/health");
