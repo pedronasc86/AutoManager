@@ -425,7 +425,7 @@ async function carregarPecas() {
             const compatibilidade = escaparHtml(peca.compatibilidade ?? peca.Compatibilidade ?? 'Geral');
             const preco = Number(peca.precoUnitario ?? peca.PrecoUnitario ?? 0).toFixed(2);
             const stock = peca.stockDisponivel ?? peca.StockDisponivel ?? 0;
-            const ativo = peca.ativo ?? peca.Ativo ?? true;
+            const emStock = Number(stock) > 0;
 
             return `
                 <tr>
@@ -436,17 +436,15 @@ async function carregarPecas() {
                     <td><strong>${preco} €</strong></td>
                     <td>${stock}</td>
                     <td>
-                        <span class="badge ${ativo ? 'concluida' : 'pendente'}">
-                            ${ativo ? 'Ativa' : 'Inativa'}
+                        <span class="badge ${emStock ? 'concluida' : 'pendente'}">
+                            ${emStock ? 'Ativa' : 'Inativa'}
                         </span>
                     </td>
                     <td>
                         <button class="btn-action btn-edit" onclick="abrirModalEditarPeca('${id}')" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button class="btn-action ${ativo ? 'btn-warning' : 'btn-success'}" onclick="alternarInativarPeca('${id}', ${ativo})" title="${ativo ? 'Inativar' : 'Ativar'}">
-                            <i class="fa-solid ${ativo ? 'fa-ban' : 'fa-check'}"></i>
-                        </button>
+
                         <button class="btn-action btn-delete" onclick="eliminarPeca('${id}')" title="Eliminar">
                             <i class="fa-solid fa-trash"></i>
                         </button>

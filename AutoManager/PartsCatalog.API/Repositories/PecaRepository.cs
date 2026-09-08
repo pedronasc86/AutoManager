@@ -71,7 +71,7 @@ namespace PartsCatalog.API.Repositories
         {
             var peca = await _context.Pecas.FindAsync(id);
 
-            if (peca == null || !peca.Ativo)
+            if (peca == null)
                 return false;
 
             return peca.StockDisponivel >= quantidade;
