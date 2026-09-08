@@ -348,6 +348,22 @@
                     </thead>
                     <tbody id="tabelaClientesBody"></tbody>
                 </table>
+
+                <div class="paginacao" id="paginacaoClientes">
+                    <button id="btnPaginaAnteriorClientes"
+                            class="btn-pagina"
+                            onclick="mudarPaginaClientes(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaClientes">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinteClientes"
+                            class="btn-pagina"
+                            onclick="mudarPaginaClientes(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <section id="secaoAdmins" class="table-section view-hidden">
@@ -553,7 +569,7 @@
                 </button>
             </div>
 
-            <form id="formVeiculo" onsubmit="guardarVeiculo(event)">
+            <form id="formVeiculo" onsubmit="guardarVeiculo(event); return false;">
                 <input type="hidden" id="veiculoEdicaoId">
 
                 <div class="form-group">
