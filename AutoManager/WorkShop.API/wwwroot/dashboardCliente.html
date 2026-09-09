@@ -279,6 +279,25 @@
                     </thead>
                     <tbody id="tabelaPecasDisponiveis"></tbody>
                 </table>
+                <div id="paginacaoPecasCliente" class="paginacao">
+                    <button id="btnAnteriorPecasCliente"
+                            class="btn-pagina"
+                            type="button"
+                            onclick="mudarPaginaPecasCliente(-1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        Anterior
+                    </button>
+
+                    <span id="infoPaginaPecasCliente">Página 1 de 1</span>
+
+                    <button id="btnSeguintePecasCliente"
+                            class="btn-pagina"
+                            type="button"
+                            onclick="mudarPaginaPecasCliente(1)">
+                        Seguinte
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
         </div>
     </main>
