@@ -78,27 +78,103 @@
 
         <div class="content">
             <!-- CARDS DE ESTATÍSTICA -->
-            <div id="dashboardCards" class="cards-grid">
-                <div class="card total">
-                    <div class="card-info">
-                        <h3>Ordens Totais</h3>
-                        <div class="number" id="totalOrdens">0</div>
+            <div id="dashboardCards" class="dashboard-overview">
+
+                <!-- Gráfico das ordens -->
+                <section class="dashboard-chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <p class="section-eyebrow">
+                                <i class="fa-solid fa-screwdriver-wrench"></i>
+                                Ordens de reparação
+                            </p>
+                            <h3>Estado das ordens</h3>
+                        </div>
+                        <i class="fa-solid fa-chart-pie chart-header-icon"></i>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-folder-open"></i></div>
-                </div>
-                <div class="card curso">
-                    <div class="card-info">
-                        <h3>Em Curso</h3>
-                        <div class="number" id="emCurso">0</div>
+
+                    <div class="chart-content">
+                        <div id="graficoOrdens" class="donut-chart donut-ordens">
+                            <span id="dashTotalOrdens">0</span>
+                        </div>
+
+                        <div class="chart-legend">
+                            <div>
+                                <span class="legend-dot legend-orange"></span>
+                                Em curso: <strong id="dashEmCurso">0</strong>
+                            </div>
+                            <div>
+                                <span class="legend-dot legend-green"></span>
+                                Concluídas: <strong id="dashConcluidas">0</strong>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-spinner"></i></div>
-                </div>
-                <div class="card concluidas">
-                    <div class="card-info">
-                        <h3>Concluídas</h3>
-                        <div class="number" id="concluidas">0</div>
+                </section>
+
+                <!-- Gráfico das peças -->
+                <section class="dashboard-chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <p class="section-eyebrow">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Inventário
+                            </p>
+                            <h3>Estado das peças</h3>
+                        </div>
+                        <i class="fa-solid fa-chart-pie chart-header-icon"></i>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-circle-check"></i></div>
+
+                    <div class="chart-content">
+                        <div id="graficoPecas" class="donut-chart donut-pecas">
+                            <span id="dashTotalPecas">0</span>
+                        </div>
+
+                        <div class="chart-legend">
+                            <div>
+                                <span class="legend-dot legend-green"></span>
+                                Em stock: <strong id="dashPecasEmStock">0</strong>
+                            </div>
+                            <div>
+                                <span class="legend-dot legend-red"></span>
+                                Fora de stock: <strong id="dashPecasForaStock">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Restantes cartões -->
+                <div class="dashboard-quick-cards">
+                    <div class="card total">
+                        <div class="card-info">
+                            <h3>Total de veículos</h3>
+                            <div class="number" id="dashTotalVeiculos">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-car"></i></div>
+                    </div>
+
+                    <div class="card concluidas">
+                        <div class="card-info">
+                            <h3>Total de clientes</h3>
+                            <div class="number" id="dashTotalClientes">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-users"></i></div>
+                    </div>
+
+                    <div class="card curso">
+                        <div class="card-info">
+                            <h3>Pedidos pendentes</h3>
+                            <div class="number" id="dashPedidosPendentes">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                    </div>
+
+                    <div class="card total">
+                        <div class="card-info">
+                            <h3>Administradores</h3>
+                            <div class="number" id="dashTotalAdmins">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-user-shield"></i></div>
+                    </div>
                 </div>
             </div>
 
@@ -166,24 +242,7 @@
             </section>
 
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
-            <section id="secaoOrdens" class="table-section">
-                <!--<div class="table-header">
-            <h2>Ordens de Reparação</h2>
-            <button id="btnNovaOrdem" class="btn-new view-hidden"
-                    onclick="abrirModalNovaOrdem()">
-                <i class="fa-solid fa-plus"></i> Nova Ordem
-            </button>
-        </div>
-        <div class="table-filter-row">
-            <input type="number" id="filtroVeiculoId"
-                   min="1" placeholder="ID do veículo">
-            <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-                <i class="fa-solid fa-filter"></i> Filtrar
-            </button>
-            <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-                Limpar
-            </button>
-        </div>-->
+            <section id="secaoOrdens" class="table-section view-hidden">
                 <div class="table-header orders-header">
                     <div>
                         <p class="section-eyebrow">

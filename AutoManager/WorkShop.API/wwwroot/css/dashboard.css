@@ -966,3 +966,136 @@ tr {
         grid-template-columns: 1fr;
     }
 }
+
+/* Resumo visual do Dashboard */
+.dashboard-overview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px;
+}
+
+.dashboard-chart-card {
+    background: #ffffff;
+    border: 1px solid #dfe7f1;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+    .chart-card-header h3 {
+        margin: 5px 0 0;
+        font-size: 20px;
+        color: #0f2948;
+    }
+
+.chart-header-icon {
+    color: #3b82f6;
+    font-size: 22px;
+}
+
+.chart-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 35px;
+    margin-top: 25px;
+}
+
+.donut-chart {
+    --percent: 0%;
+    width: 145px;
+    height: 145px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    position: relative;
+}
+
+    .donut-chart::after {
+        content: "";
+        position: absolute;
+        width: 102px;
+        height: 102px;
+        border-radius: 50%;
+        background: #ffffff;
+    }
+
+    .donut-chart span {
+        position: relative;
+        z-index: 1;
+        font-size: 30px;
+        font-weight: 700;
+        color: #0f2948;
+    }
+
+.donut-ordens {
+    background: conic-gradient( #10b981 0 var(--percent), #f59e0b var(--percent) 100% );
+}
+
+.donut-pecas {
+    background: conic-gradient( #10b981 0 var(--percent), #ef4444 var(--percent) 100% );
+}
+
+.chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    color: #64748b;
+}
+
+    .chart-legend strong {
+        color: #0f2948;
+    }
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 7px;
+}
+
+.legend-orange {
+    background: #f59e0b;
+}
+
+.legend-green {
+    background: #10b981;
+}
+
+.legend-red {
+    background: #ef4444;
+}
+
+.dashboard-quick-cards {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 1000px) {
+    .dashboard-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-quick-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .chart-content {
+        flex-direction: column;
+    }
+
+    .dashboard-quick-cards {
+        grid-template-columns: 1fr;
+    }
+}

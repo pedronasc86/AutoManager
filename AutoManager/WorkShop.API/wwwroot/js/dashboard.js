@@ -53,8 +53,8 @@ function mostrarSecao(secao) {
     secaoAtual = secao;
 
     //const mostrarDashboard = secao === 'dashboard';
-    const mostrarDashboard = secao === 'dashboard' || secao === 'ordens';
-    const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
+    const mostrarDashboard = secao === 'dashboard';
+    const mostrarOrdens = secao === 'ordens';
 
     const btnNovaOrdemEl = document.getElementById('btnNovaOrdem');
     if (btnNovaOrdemEl) {
@@ -423,6 +423,8 @@ function atualizarResumoPecas(pecas) {
     document.getElementById('totalPecas').textContent = total;
     document.getElementById('pecasEmStock').textContent = emStock;
     document.getElementById('pecasForaStock').textContent = foraStock;
+
+    atualizarGraficoPecas(total, emStock, foraStock);
 }
 
 // Paginação das peças
@@ -1273,6 +1275,32 @@ function limparFiltroVeiculo() {
     carregarDadosDashboard();
 }
 
+function atualizarGraficoOrdens(total, emCurso, concluidas) {
+    const percentagemConcluidas = total > 0
+        ? (concluidas / total) * 100
+        : 0;
+
+    document.getElementById('dashTotalOrdens').textContent = total;
+    document.getElementById('dashEmCurso').textContent = emCurso;
+    document.getElementById('dashConcluidas').textContent = concluidas;
+
+    document.getElementById('graficoOrdens')
+        .style.setProperty('--percent', `${percentagemConcluidas}%`);
+}
+
+function atualizarGraficoPecas(total, emStock, foraStock) {
+    const percentagemEmStock = total > 0
+        ? (emStock / total) * 100
+        : 0;
+
+    document.getElementById('dashTotalPecas').textContent = total;
+    document.getElementById('dashPecasEmStock').textContent = emStock;
+    document.getElementById('dashPecasForaStock').textContent = foraStock;
+
+    document.getElementById('graficoPecas')
+        .style.setProperty('--percent', `${percentagemEmStock}%`);
+}
+
 async function carregarDadosDashboard() {
     try {
         // 1. Carregar Pedidos Aprovados (Aguardar Criação de Ordem)
@@ -1414,6 +1442,12 @@ async function carregarDadosDashboard() {
             if (document.getElementById('concluidas')) document.getElementById('concluidas').textContent = totalConcluidas;
             if (document.getElementById('emCurso')) document.getElementById('emCurso').textContent = totalEmCurso;
             if (document.getElementById('totalOrdens')) document.getElementById('totalOrdens').textContent = totalGeralOrdens;
+
+            atualizarGraficoOrdens(
+                totalGeralOrdens,
+                totalEmCurso,
+                totalConcluidas
+            );
         }
 
     } catch (error) {
@@ -2353,3 +2387,125 @@ async function eliminarVeiculo(id) {
         alert(error.message);
     }
 }
+
+// Carrega apenas os valores necessários para o gráfico de peças no Dashboard.
+async function carregarResumoPecasDashboard() {
+    try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(
+            'https://localhost:7039/api/pecas/admin/todas',
+            {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar o resumo das peças.');
+        }
+
+        const data = await response.json();
+
+        const pecas = Array.isArray(data)
+            ? data
+            : (data.value || data.itens || []);
+
+        // Atualiza os cartões normais e também o gráfico circular.
+        atualizarResumoPecas(pecas);
+
+    } catch (error) {
+        console.error('Erro ao carregar gráfico das peças:', error);
+    }
+}
+
+// Carrega os valores dos cartões pequenos do Dashboard.
+async function carregarResumoCartoesDashboard() {
+    const token = localStorage.getItem('token');
+
+    const opcoes = {
+        credentials: 'include',
+        headers: token
+            ? { 'Authorization': `Bearer ${token}` }
+            : {}
+    };
+
+    // Converte respostas normais, OData ou listas internas numa lista.
+    const obterLista = async (url) => {
+        const response = await fetch(url, opcoes);
+
+        if (!response.ok) {
+            throw new Error(`Erro ao obter dados de ${url}`);
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data)
+            ? data
+            : (data.value || data.itens || []);
+    };
+
+    try {
+        // Mesmo que uma API falhe, as restantes continuam a atualizar.
+        const resultados = await Promise.allSettled([
+            obterLista('https://localhost:7085/api/Veiculos'),
+            obterLista('https://localhost:7194/api/Auth/users'),
+            obterLista('/api/pedidos/pendentes'),
+            obterLista('https://localhost:7194/api/Auth/admins')
+        ]);
+
+        const veiculos = resultados[0].status === 'fulfilled'
+            ? resultados[0].value
+            : [];
+
+        const utilizadores = resultados[1].status === 'fulfilled'
+            ? resultados[1].value
+            : [];
+
+        const pedidos = resultados[2].status === 'fulfilled'
+            ? resultados[2].value
+            : [];
+
+        const admins = resultados[3].status === 'fulfilled'
+            ? resultados[3].value
+            : [];
+
+        // Aceita role/Role/roles/Rules e nomes diferentes para Administrador.
+        const temPerfil = (utilizador, perfisPermitidos) => {
+            const perfis = utilizador.roles
+                ?? utilizador.Roles
+                ?? utilizador.role
+                ?? utilizador.Role
+                ?? [];
+
+            const listaPerfis = Array.isArray(perfis) ? perfis : [perfis];
+
+            return listaPerfis.some(perfil =>
+                perfisPermitidos.includes(String(perfil).toLowerCase())
+            );
+        };
+
+        const clientes = utilizadores.filter(utilizador =>
+            temPerfil(utilizador, ['cliente'])
+        );
+
+        document.getElementById('dashTotalVeiculos').textContent = veiculos.length;
+        document.getElementById('dashTotalClientes').textContent = clientes.length;
+        document.getElementById('dashTotalAdmins').textContent = admins.length;
+        document.getElementById('dashPedidosPendentes').textContent = pedidos.length;
+
+    } catch (error) {
+        console.error('Erro ao carregar cartões do Dashboard:', error);
+    }
+}
+
+// Ao abrir o site, mostra apenas o Dashboard e carrega os seus dados.
+document.addEventListener('DOMContentLoaded', () => {
+    mostrarSecao('dashboard');
+
+    carregarResumoPecasDashboard();
+    carregarResumoCartoesDashboard();
+});
