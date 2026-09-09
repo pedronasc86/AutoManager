@@ -1,11 +1,17 @@
 ﻿let paginaAtualCliente = 1;
 
+// Paginação do histórico aberto no modal.
+const pedidosPorPaginaHistorico = 5;
+let paginaAtualHistoricoPedidos = 1;
+let pedidosHistoricoCarregados = [];
+
 function mostrarSecaoCliente(secao) {
     const secaoDashboard = document.getElementById('secaoDashboard');
     const secaoOrdens = document.getElementById('secaoOrdens');
     const secaoMeusVeiculos = document.getElementById('secaoMeusVeiculos');
     const secaoPecas = document.getElementById('secaoPecas');
     const secaoPedidos = document.getElementById('secaoPedidos');
+    const meusVeiculosCards = document.getElementById('meusVeiculosCards');
     const tituloPagina = document.getElementById('tituloPagina');
 
     const mostrarDashboard = secao === 'dashboard';
@@ -19,6 +25,10 @@ function mostrarSecaoCliente(secao) {
     if (secaoMeusVeiculos) secaoMeusVeiculos.classList.toggle('view-hidden', !mostrarVeiculos);
     if (secaoPecas) secaoPecas.classList.toggle('view-hidden', !mostrarPecas);
     if (secaoPedidos) secaoPedidos.classList.toggle('view-hidden', !mostrarPedidos);
+
+    if (meusVeiculosCards) {
+        meusVeiculosCards.classList.toggle('view-hidden', !mostrarVeiculos);
+    }
 
     if (tituloPagina) {
         if (secao === 'meus-veiculos') tituloPagina.textContent = 'Os Meus Veículos';
@@ -42,7 +52,7 @@ function mostrarSecaoCliente(secao) {
     } else if (secao === 'pecas') {
         carregarPecasDisponiveisCliente();
     } else if (secao === 'pedidos') {
-        carregarMeusPedidos();
+        carregarVeiculosParaPedido();
     }
 }
 
@@ -89,65 +99,147 @@ async function carregarEstatisticasDashboard() {
 
 async function carregarPedidosDashboard() {
     const tabela = document.getElementById('tabelaDashboardPedidos');
+
     if (!tabela) return;
+
     tabela.innerHTML = '';
 
     try {
-        const response = await fetch('https://localhost:7085/api/pedidos/meus-pedidos', {
-            method: 'GET',
-            credentials: 'include'
-        });
+        const response = await fetch(
+            'https://localhost:7085/api/pedidos/meus-pedidos',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
 
-        if (!response.ok) throw new Error('Não foi possível carregar os pedidos do dashboard.');
-
-        const dados = await response.json();
-        const pedidos = dados.value || dados;
-
-        if (!Array.isArray(pedidos) || pedidos.length === 0) {
-            mostrarTabelaVazia('tabelaDashboardPedidos', 5, 'Ainda não tem nenhum pedido de reparação registado.');
-            return;
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os pedidos do dashboard.');
         }
 
-        // Apresenta apenas os últimos 5 pedidos no Dashboard
-        const ultimosPedidos = pedidos.slice(0, 5);
+        const dados = await response.json();
 
-        tabela.innerHTML = ultimosPedidos.map(p => {
-            let estadoBruto = p.estado || 'Pendente';
-            let estadoExibicao = estadoBruto;
+        pedidosDashboardCarregados = Array.isArray(dados)
+            ? dados
+            : (dados.value || []);
+
+        const totalPaginas = Math.max(
+            1,
+            Math.ceil(pedidosDashboardCarregados.length / pedidosDashboardPorPagina)
+        );
+
+        if (paginaAtualPedidosDashboard > totalPaginas) {
+            paginaAtualPedidosDashboard = totalPaginas;
+        }
+
+        renderizarPedidosDashboard();
+
+    } catch (error) {
+        console.error(error);
+        mostrarTabelaVazia(
+            'tabelaDashboardPedidos',
+            5,
+            'Erro ao carregar pedidos.'
+        );
+    }
+}
+
+function renderizarPedidosDashboard() {
+    const tabela = document.getElementById('tabelaDashboardPedidos');
+
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pedidosDashboardCarregados.length / pedidosDashboardPorPagina)
+    );
+
+    const inicio = (paginaAtualPedidosDashboard - 1) * pedidosDashboardPorPagina;
+
+    const pedidosDaPagina = pedidosDashboardCarregados.slice(
+        inicio,
+        inicio + pedidosDashboardPorPagina
+    );
+
+    if (pedidosDaPagina.length === 0) {
+        mostrarTabelaVazia(
+            'tabelaDashboardPedidos',
+            5,
+            'Ainda não tem nenhum pedido de reparação registado.'
+        );
+    } else {
+        tabela.innerHTML = pedidosDaPagina.map(p => {
+            const estadoBruto = p.estado || 'Pendente';
+
+            let estadoExibicao = 'Pendente';
             let estadoClasse = 'curso';
 
-            if (estadoBruto === 'Completo' || estadoBruto === 'Concluído' || estadoBruto === 'Concluida') {
+            if (
+                estadoBruto === 'Completo' ||
+                estadoBruto === 'Concluído' ||
+                estadoBruto === 'Concluida'
+            ) {
                 estadoExibicao = 'Concluído';
                 estadoClasse = 'concluida';
-            } else if (estadoBruto === 'Aceite' || estadoBruto === 'Aprovado' || estadoBruto === 'Aprovado - Em Curso') {
+
+            } else if (
+                estadoBruto === 'Aceite' ||
+                estadoBruto === 'Aprovado' ||
+                estadoBruto === 'Aprovado - Em Curso'
+            ) {
                 estadoExibicao = 'Aprovado - Em Curso';
                 estadoClasse = 'concluida';
-            } else if (estadoBruto === 'Rejeitado' || estadoBruto === 'Recusado') {
+
+            } else if (
+                estadoBruto === 'Rejeitado' ||
+                estadoBruto === 'Recusado'
+            ) {
                 estadoExibicao = 'Rejeitado';
                 estadoClasse = 'erro';
-            } else {
-                estadoExibicao = 'Pendente';
-                estadoClasse = 'curso';
             }
 
             return `
-            <tr>
-                <td>${p.dataSubmissao ? new Date(p.dataSubmissao).toLocaleDateString() : '-'}</td>
-                <td>Veículo #${p.veiculoId}</td>
-                <td>${escaparHtml(p.descricaoProblema)}</td>
-                <td>
-                    <span class="badge ${estadoClasse}">
-                        ${escaparHtml(estadoExibicao)}
-                    </span>
-                </td>
-                <td>${escaparHtml(p.observacoesAdmin || '-')}</td>
-            </tr>
-        `;
+                <tr>
+                    <td>
+                        ${p.dataSubmissao
+                    ? new Date(p.dataSubmissao).toLocaleDateString()
+                    : '-'}
+                    </td>
+                    <td>Veículo #${p.veiculoId}</td>
+                    <td>${escaparHtml(p.descricaoProblema)}</td>
+                    <td>
+                        <span class="badge ${estadoClasse}">
+                            ${escaparHtml(estadoExibicao)}
+                        </span>
+                    </td>
+                    <td>${escaparHtml(p.observacoesAdmin || '-')}</td>
+                </tr>
+            `;
         }).join('');
-    } catch (error) {
-        console.error(error);
-        mostrarTabelaVazia('tabelaDashboardPedidos', 5, 'Erro ao carregar pedidos.');
     }
+
+    document.getElementById('infoPaginaDashboardPedidos').textContent =
+        `Página ${paginaAtualPedidosDashboard} de ${totalPaginas}`;
+
+    document.getElementById('btnAnteriorDashboardPedidos').disabled =
+        paginaAtualPedidosDashboard <= 1;
+
+    document.getElementById('btnSeguinteDashboardPedidos').disabled =
+        paginaAtualPedidosDashboard >= totalPaginas;
+}
+
+function mudarPaginaPedidosDashboard(direcao) {
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pedidosDashboardCarregados.length / pedidosDashboardPorPagina)
+    );
+
+    const novaPagina = paginaAtualPedidosDashboard + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginas) {
+        return;
+    }
+
+    paginaAtualPedidosDashboard = novaPagina;
+    renderizarPedidosDashboard();
 }
 
 function atualizarTextoElemento(idsPossiveis, valor) {
@@ -202,6 +294,12 @@ async function carregarMeusVeiculos() {
 
         const veiculos = await response.json();
 
+        const totalMeusVeiculos = document.getElementById('totalMeusVeiculos');
+
+        if (totalMeusVeiculos) {
+            totalMeusVeiculos.textContent = veiculos.length;
+        }
+
         if (!Array.isArray(veiculos) || veiculos.length === 0) {
             mostrarTabelaVazia('tabelaMeusVeiculos', 6, 'Ainda não tens nenhum veículo registado.');
             return;
@@ -215,12 +313,22 @@ async function carregarMeusVeiculos() {
                 <td>${escaparHtml(v.modelo)}</td>
                 <td>${v.ano}</td>
                 <td>
-                    <button class="btn-filter" style="padding: 6px 10px; margin-right: 5px;" 
-                            onclick="abrirModalEditarVeiculo(${v.id}, '${escaparHtml(v.matricula)}', '${escaparHtml(v.marca)}', '${escaparHtml(v.modelo)}', ${v.ano})" title="Editar">
+                    <button class="btn-action btn-edit"
+                            onclick="abrirModalEditarVeiculo(
+                                ${v.id},
+                                '${escaparHtml(v.matricula)}',
+                                '${escaparHtml(v.marca)}',
+                                '${escaparHtml(v.modelo)}',
+                                ${v.ano}
+                            )">
                         <i class="fa-solid fa-pen"></i>
+                        Editar
                     </button>
-                    <button class="btn-clear-filter" style="padding: 6px 10px;" onclick="eliminarVeiculo(${v.id})" title="Eliminar">
+
+                    <button class="btn-action btn-delete"
+                            onclick="eliminarVeiculo(${v.id})">
                         <i class="fa-solid fa-trash"></i>
+                        Eliminar
                     </button>
                 </td>
             </tr>
@@ -349,6 +457,62 @@ async function eliminarVeiculo(id) {
 
 let aSubmeterPedido = false;
 
+// Preenche o seletor apenas com os veículos do cliente autenticado.
+async function carregarVeiculosParaPedido() {
+    const selectVeiculo = document.getElementById('veiculoIdPedido');
+
+    if (!selectVeiculo) return;
+
+    selectVeiculo.disabled = true;
+    selectVeiculo.innerHTML = '<option value="">A carregar os teus veículos...</option>';
+
+    try {
+        const response = await fetch(
+            'https://localhost:7085/api/Veiculos/meus',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar os veículos.');
+        }
+
+        const veiculos = await response.json();
+
+        selectVeiculo.innerHTML = '';
+
+        const opcaoInicial = document.createElement('option');
+        opcaoInicial.value = '';
+        opcaoInicial.textContent = 'Seleciona um veículo';
+        selectVeiculo.appendChild(opcaoInicial);
+
+        if (!Array.isArray(veiculos) || veiculos.length === 0) {
+            opcaoInicial.textContent = 'Ainda não tens veículos registados';
+            return;
+        }
+
+        veiculos.forEach(veiculo => {
+            const opcao = document.createElement('option');
+
+            opcao.value = veiculo.id;
+            opcao.textContent =
+                `${veiculo.matricula} — ${veiculo.marca} ${veiculo.modelo} (${veiculo.ano})`;
+
+            selectVeiculo.appendChild(opcao);
+        });
+
+        selectVeiculo.disabled = false;
+
+    } catch (error) {
+        console.error(error);
+
+        selectVeiculo.innerHTML =
+            '<option value="">Erro ao carregar veículos</option>';
+    }
+}
+
 async function submeterPedido(e) {
     e.preventDefault();
 
@@ -362,7 +526,7 @@ async function submeterPedido(e) {
     const descricaoVal = document.getElementById('descricaoProblema')?.value;
 
     if (!veiculoIdVal) {
-        alert('Por favor, insira o ID do veículo.');
+        alert('Seleciona um veículo antes de enviares o pedido.');
         aSubmeterPedido = false;
         if (btnSubmit) btnSubmit.disabled = false;
         return;
@@ -383,7 +547,6 @@ async function submeterPedido(e) {
 
         if (response.ok) {
             document.getElementById('formNovoPedido')?.reset();
-            carregarMeusPedidos();
             carregarEstatisticasDashboard();
             carregarPedidosDashboard();
         } else {
@@ -407,64 +570,157 @@ async function submeterPedido(e) {
     }
 }
 
-async function carregarMeusPedidos() {
-    const tabela = document.getElementById('tabelaMeusPedidos');
-    if (!tabela) return;
-    tabela.innerHTML = '';
+function fecharModalHistoricoPedidos() {
+    const modal = document.getElementById('modalHistoricoPedidos');
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function abrirModalHistoricoPedidos() {
+    const modal = document.getElementById('modalHistoricoPedidos');
+
+    if (!modal) return;
+
+    modal.style.display = 'flex';
 
     try {
-        const response = await fetch('https://localhost:7085/api/pedidos/meus-pedidos', {
-            method: 'GET',
-            credentials: 'include'
-        });
+        const response = await fetch(
+            'https://localhost:7085/api/pedidos/meus-pedidos',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
 
-        if (!response.ok) throw new Error('Não foi possível carregar os pedidos.');
-
-        const dados = await response.json();
-        const pedidos = dados.value || dados;
-
-        if (!Array.isArray(pedidos) || pedidos.length === 0) {
-            mostrarTabelaVazia('tabelaMeusPedidos', 5, 'Ainda não tens nenhum pedido de reparação registado.');
-            return;
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar o histórico.');
         }
 
-        tabela.innerHTML = pedidos.map(p => {
-            let estadoBruto = p.estado || 'Pendente';
-            let estadoExibicao = estadoBruto;
+        const dados = await response.json();
+
+        pedidosHistoricoCarregados = Array.isArray(dados)
+            ? dados
+            : (dados.value || []);
+
+        paginaAtualHistoricoPedidos = 1;
+
+        renderizarHistoricoPedidosModal();
+
+    } catch (error) {
+        console.error(error);
+
+        pedidosHistoricoCarregados = [];
+        renderizarHistoricoPedidosModal(true);
+    }
+}
+
+function renderizarHistoricoPedidosModal(temErro = false) {
+    const tabela = document.getElementById('tabelaHistoricoPedidosModal');
+
+    if (!tabela) return;
+
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pedidosHistoricoCarregados.length / pedidosPorPaginaHistorico)
+    );
+
+    if (paginaAtualHistoricoPedidos > totalPaginas) {
+        paginaAtualHistoricoPedidos = totalPaginas;
+    }
+
+    const inicio = (paginaAtualHistoricoPedidos - 1) * pedidosPorPaginaHistorico;
+
+    const pedidosDaPagina = pedidosHistoricoCarregados.slice(
+        inicio,
+        inicio + pedidosPorPaginaHistorico
+    );
+
+    if (pedidosDaPagina.length === 0) {
+        mostrarTabelaVazia(
+            'tabelaHistoricoPedidosModal',
+            5,
+            temErro
+                ? 'Erro ao carregar o histórico de pedidos.'
+                : 'Ainda não tens nenhum pedido de reparação registado.'
+        );
+
+    } else {
+        tabela.innerHTML = pedidosDaPagina.map(pedido => {
+            const estadoBruto = pedido.estado || 'Pendente';
+
+            let estadoExibicao = 'Pendente';
             let estadoClasse = 'curso';
 
-            if (estadoBruto === 'Completo' || estadoBruto === 'Concluído' || estadoBruto === 'Concluida') {
+            if (
+                estadoBruto === 'Completo' ||
+                estadoBruto === 'Concluído' ||
+                estadoBruto === 'Concluida'
+            ) {
                 estadoExibicao = 'Concluído';
                 estadoClasse = 'concluida';
-            } else if (estadoBruto === 'Aceite' || estadoBruto === 'Aprovado' || estadoBruto === 'Aprovado - Em Curso') {
+
+            } else if (
+                estadoBruto === 'Aceite' ||
+                estadoBruto === 'Aprovado' ||
+                estadoBruto === 'Aprovado - Em Curso'
+            ) {
                 estadoExibicao = 'Aprovado - Em Curso';
                 estadoClasse = 'concluida';
-            } else if (estadoBruto === 'Rejeitado' || estadoBruto === 'Recusado') {
+
+            } else if (
+                estadoBruto === 'Rejeitado' ||
+                estadoBruto === 'Recusado'
+            ) {
                 estadoExibicao = 'Rejeitado';
                 estadoClasse = 'erro';
-            } else {
-                estadoExibicao = 'Pendente';
-                estadoClasse = 'curso';
             }
 
             return `
-            <tr>
-                <td>${p.dataSubmissao ? new Date(p.dataSubmissao).toLocaleDateString() : '-'}</td>
-                <td>Veículo #${p.veiculoId}</td>
-                <td>${escaparHtml(p.descricaoProblema)}</td>
-                <td>
-                    <span class="badge ${estadoClasse}">
-                        ${escaparHtml(estadoExibicao)}
-                    </span>
-                </td>
-                <td>${escaparHtml(p.observacoesAdmin || '-')}</td>
-            </tr>
-        `;
+                <tr>
+                    <td>
+                        ${pedido.dataSubmissao
+                    ? new Date(pedido.dataSubmissao).toLocaleDateString()
+                    : '-'}
+                    </td>
+                    <td>Veículo #${pedido.veiculoId}</td>
+                    <td>${escaparHtml(pedido.descricaoProblema)}</td>
+                    <td>
+                        <span class="badge ${estadoClasse}">
+                            ${escaparHtml(estadoExibicao)}
+                        </span>
+                    </td>
+                    <td>${escaparHtml(pedido.observacoesAdmin || '-')}</td>
+                </tr>
+            `;
         }).join('');
-    } catch (error) {
-        console.error(error);
-        mostrarTabelaVazia('tabelaMeusPedidos', 5, 'Erro ao carregar pedidos de reparação.');
     }
+
+    document.getElementById('infoPaginaHistoricoPedidos').textContent =
+        `Página ${paginaAtualHistoricoPedidos} de ${totalPaginas}`;
+
+    document.getElementById('btnAnteriorHistoricoPedidos').disabled =
+        paginaAtualHistoricoPedidos <= 1;
+
+    document.getElementById('btnSeguinteHistoricoPedidos').disabled =
+        paginaAtualHistoricoPedidos >= totalPaginas;
+}
+
+function mudarPaginaHistoricoPedidos(direcao) {
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pedidosHistoricoCarregados.length / pedidosPorPaginaHistorico)
+    );
+
+    const novaPagina = paginaAtualHistoricoPedidos + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginas) {
+        return;
+    }
+
+    paginaAtualHistoricoPedidos = novaPagina;
+    renderizarHistoricoPedidosModal();
 }
 
 async function carregarPecasDisponiveisCliente() {

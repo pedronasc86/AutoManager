@@ -1099,3 +1099,174 @@ tr {
         grid-template-columns: 1fr;
     }
 }
+
+/* Dashboard do Cliente */
+.client-activity-section {
+    margin-top: 28px;
+}
+
+    .client-activity-section .orders-header {
+        padding-bottom: 22px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .client-activity-section .btn-new {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+    }
+
+    .client-activity-section tbody td {
+        height: 80px;
+    }
+
+/* Página de Pedidos - Área do Cliente */
+.pedido-form-card {
+    margin: 26px 0 32px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.pedido-form-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 26px;
+}
+
+.pedido-form-icon {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #2563eb;
+    background: #eaf2ff;
+    font-size: 19px;
+}
+
+.pedido-form-heading h3 {
+    margin: 0;
+    color: #0f2948;
+    font-size: 20px;
+}
+
+.pedido-form-heading p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.pedido-form-card .form-group {
+    margin-bottom: 20px;
+}
+
+.pedido-form-card label {
+    display: block;
+    margin-bottom: 8px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.pedido-form-card input,
+.pedido-form-card textarea,
+.pedido-form-card select {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #d7e1ee;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #0f2948;
+    font: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pedido-form-card textarea {
+    min-height: 115px;
+    resize: vertical;
+}
+
+    .pedido-form-card input:focus,
+    .pedido-form-card textarea:focus,
+    .pedido-form-card select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.13);
+    }
+
+.pedido-form-card select:disabled {
+    cursor: not-allowed;
+    background: #f8fafc;
+    color: #94a3b8;
+}
+
+.form-help {
+    display: block;
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.btn-submit-pedido {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    border: none;
+    cursor: pointer;
+}
+
+.client-history-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin: 0 0 18px;
+}
+
+    .client-history-heading h3 {
+        margin: 5px 0 0;
+        color: #0f2948;
+        font-size: 21px;
+    }
+
+/* Modal do histórico de pedidos do cliente */
+.modal-historico {
+    width: min(1100px, 94vw);
+    max-width: 1100px;
+    max-height: 85vh;
+    overflow: hidden;
+}
+
+    .modal-historico .modal-header {
+        align-items: flex-start;
+    }
+
+        .modal-historico .modal-header h3 {
+            margin: 5px 0 0;
+            color: #0f2948;
+            font-size: 22px;
+        }
+
+.modal-description {
+    margin: 10px 0 22px;
+    color: #64748b;
+}
+
+.modal-table-wrapper {
+    max-height: 55vh;
+    overflow: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+    .modal-table-wrapper table {
+        min-width: 850px;
+        margin: 0;
+    }
+
+.modal-historico .paginacao {
+    margin: 20px 0 0;
+}

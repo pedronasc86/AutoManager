@@ -7,35 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/dashboard.css">
-
-    <style>
-        .form-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-
-            .form-card h3 {
-                margin-top: 0;
-                margin-bottom: 15px;
-                font-size: 1.1rem;
-                color: #333;
-            }
-
-            .form-card input, .form-card textarea {
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                margin-top: 5px;
-                font-family: inherit;
-            }
-    </style>
 </head>
 <body>
-
     <aside>
         <div>
             <div class="logo-area">
@@ -113,13 +86,28 @@
                 </div>
 
                 <!-- Tabela de Pedidos Recentes no Dashboard -->
-                <section class="table-section">
-                    <div class="table-header">
-                        <h2><i class="fa-solid fa-clock-rotate-left"></i> Últimos Pedidos de Reparação</h2>
-                        <button class="btn-action" onclick="mostrarSecaoCliente('pedidos'); return false;">
-                            Ver Todos <i class="fa-solid fa-arrow-right"></i>
+                <section class="table-section client-activity-section">
+                    <div class="table-header orders-header">
+                        <div>
+                            <p class="section-eyebrow">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                Acompanhamento
+                            </p>
+
+                            <h2>Últimos Pedidos de Reparação</h2>
+
+                            <p class="section-description">
+                                Consulta rapidamente o estado e as observações mais recentes da oficina.
+                            </p>
+                        </div>
+
+                        <button class="btn-new"
+                                onclick="abrirModalHistoricoPedidos(); return false;">
+                            Ver histórico
+                            <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </div>
+
                     <table>
                         <thead>
                             <tr>
@@ -130,64 +118,133 @@
                                 <th>Observações da Oficina</th>
                             </tr>
                         </thead>
+
                         <tbody id="tabelaDashboardPedidos">
-                            <!-- Preenchido via JavaScript (dashboardCliente.js) -->
+                            <!-- Preenchido pelo dashboardCliente.js -->
                         </tbody>
                     </table>
+
+                    <div id="paginacaoDashboardPedidos" class="paginacao">
+                        <button id="btnAnteriorDashboardPedidos"
+                                class="btn-pagina"
+                                type="button"
+                                onclick="mudarPaginaPedidosDashboard(-1)">
+                            <i class="fa-solid fa-chevron-left"></i>
+                            Anterior
+                        </button>
+
+                        <span id="infoPaginaDashboardPedidos">Página 1 de 1</span>
+
+                        <button id="btnSeguinteDashboardPedidos"
+                                class="btn-pagina"
+                                type="button"
+                                onclick="mudarPaginaPedidosDashboard(1)">
+                            Seguinte
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+
                 </section>
             </div>
 
             <!-- SECÇÃO PEDIDOS DE REPARAÇÃO -->
             <section id="secaoPedidos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Pedidos de Reparação</h2>
+
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                            Gestão do cliente
+                        </p>
+
+                        <h2>Pedidos de Reparação</h2>
+
+                        <p class="section-description">
+                            Envia um pedido para a oficina e acompanha o respetivo estado.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="form-card">
-                    <h3>Criar Novo Pedido</h3>
+                <div class="form-card pedido-form-card">
+                    <div class="pedido-form-heading">
+                        <div class="pedido-form-icon">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </div>
+
+                        <div>
+                            <h3>Criar novo pedido</h3>
+                            <p>Indica o veículo e descreve o problema que precisa de reparação.</p>
+                        </div>
+                    </div>
+
                     <form id="formNovoPedido" onsubmit="submeterPedido(event)">
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label for="veiculoIdPedido" style="font-weight: 500;">ID do Veículo <small style="color: #666; font-weight: normal;">(Veja o ID no separador 'Os Meus Veículos')</small></label>
-                            <input type="number" id="veiculoIdPedido" required placeholder="Ex: 1">
+                        <div class="form-group">
+                            <label for="veiculoIdPedido">Seleciona o veículo</label>
+
+                            <select id="veiculoIdPedido" required disabled>
+                                <option value="">A carregar os teus veículos...</option>
+                            </select>
+
+                            <small class="form-help">
+                                Só são apresentados veículos associados à tua conta.
+                            </small>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label for="descricaoProblema" style="font-weight: 500;">Descrição do Problema</label>
-                            <textarea id="descricaoProblema" rows="3" required placeholder="Descreva os sintomas ou o problema da viatura..."></textarea>
+                        <div class="form-group">
+                            <label for="descricaoProblema">Descrição do problema</label>
+
+                            <textarea id="descricaoProblema"
+                                      rows="4"
+                                      required
+                                      placeholder="Descreve os sintomas ou o problema da viatura..."></textarea>
                         </div>
 
-                        <button type="submit" class="btn-new" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar Pedido
+                        <button type="submit" class="btn-new btn-submit-pedido">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            Enviar pedido
                         </button>
                     </form>
                 </div>
 
-                <div class="table-header">
-                    <h3>Histórico de Pedidos</h3>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>ID Veículo</th>
-                            <th>Problema Reportado</th>
-                            <th>Estado</th>
-                            <th>Observações da Oficina</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaMeusPedidos">
-                    </tbody>
-                </table>
             </section>
+
+            <!-- Cartão de resumo -->
+            <div id="meusVeiculosCards" class="cards-grid veiculos-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Veículos</h3>
+                        <div class="number" id="totalMeusVeiculos">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                </div>
+            </div>
 
             <!-- SECÇÃO OS MEUS VEÍCULOS -->
             <section id="secaoMeusVeiculos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Os Meus Veículos</h2>
+                <!-- Cabeçalho profissional -->
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-car-side"></i>
+                            Gestão do cliente
+                        </p>
+
+                        <h2>Os Meus Veículos</h2>
+
+                        <p class="section-description">
+                            Consulta e gere os veículos associados à tua conta.
+                        </p>
+                    </div>
+
                     <button class="btn-new" onclick="abrirModalVeiculo()">
-                        <i class="fa-solid fa-plus"></i> Adicionar Novo Carro
+                        <i class="fa-solid fa-plus"></i>
+                        Adicionar veículo
                     </button>
                 </div>
+
                 <table>
                     <thead>
                         <tr>
@@ -199,6 +256,7 @@
                             <th>Ações</th>
                         </tr>
                     </thead>
+
                     <tbody id="tabelaMeusVeiculos"></tbody>
                 </table>
             </section>
@@ -281,6 +339,69 @@
                 </div>
                 <button type="submit" class="btn-submit-modal">Guardar Alterações</button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL HISTÓRICO DE PEDIDOS -->
+    <div id="modalHistoricoPedidos" class="modal">
+        <div class="modal-content modal-historico">
+            <div class="modal-header">
+                <div>
+                    <p class="section-eyebrow">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        Acompanhamento
+                    </p>
+
+                    <h3>Histórico de pedidos</h3>
+                </div>
+
+                <button class="close-btn"
+                        type="button"
+                        onclick="fecharModalHistoricoPedidos()">
+                    &times;
+                </button>
+            </div>
+
+            <p class="modal-description">
+                Consulta todos os pedidos de reparação enviados para a oficina.
+            </p>
+
+            <div class="modal-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>ID Veículo</th>
+                            <th>Problema Reportado</th>
+                            <th>Estado</th>
+                            <th>Observações da Oficina</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tabelaHistoricoPedidosModal"></tbody>
+                </table>
+            </div>
+
+            <div id="paginacaoHistoricoPedidos" class="paginacao">
+                <button id="btnAnteriorHistoricoPedidos"
+                        class="btn-pagina"
+                        type="button"
+                        onclick="mudarPaginaHistoricoPedidos(-1)">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    Anterior
+                </button>
+
+                <span id="infoPaginaHistoricoPedidos">Página 1 de 1</span>
+
+                <button id="btnSeguinteHistoricoPedidos"
+                        class="btn-pagina"
+                        type="button"
+                        onclick="mudarPaginaHistoricoPedidos(1)">
+                    Seguinte
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
         </div>
     </div>
 
