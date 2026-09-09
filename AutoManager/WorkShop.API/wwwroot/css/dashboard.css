@@ -938,3 +938,16 @@ tr {
         overflow-x: auto;
     }
 }
+
+/* Botões do modal de filtros: mesmo tamanho e lado a lado */
+.acoes-modal-filtro {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+    .acoes-modal-filtro .btn-submit-modal {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 0;
+    }

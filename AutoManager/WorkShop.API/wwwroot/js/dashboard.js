@@ -339,6 +339,49 @@ function atualizarPaginacaoPecas() {
         paginaAtualPecas === totalPaginasPecas;
 }
 
+// Filtros aplicados à tabela de Peças.
+let filtroEstadoStockPecas = 'todos';
+let ordenacaoPrecoPecas = 'nenhuma';
+
+function abrirModalFiltroPecas() {
+    document.getElementById('filtroEstadoStockPecas').value =
+        filtroEstadoStockPecas;
+
+    document.getElementById('filtroPrecoPecas').value =
+        ordenacaoPrecoPecas;
+
+    document.getElementById('modalFiltroPecas').style.display = 'flex';
+}
+
+function fecharModalFiltroPecas() {
+    document.getElementById('modalFiltroPecas').style.display = 'none';
+}
+
+function aplicarFiltroPecasModal(event) {
+    event.preventDefault();
+
+    filtroEstadoStockPecas =
+        document.getElementById('filtroEstadoStockPecas').value;
+
+    ordenacaoPrecoPecas =
+        document.getElementById('filtroPrecoPecas').value;
+
+    // Sempre que um filtro muda, volta à primeira página.
+    paginaAtualPecas = 1;
+
+    fecharModalFiltroPecas();
+    carregarPecas();
+}
+
+function limparFiltrosPecasModal() {
+    filtroEstadoStockPecas = 'todos';
+    ordenacaoPrecoPecas = 'nenhuma';
+    paginaAtualPecas = 1;
+
+    fecharModalFiltroPecas();
+    carregarPecas();
+}
+
 async function carregarPecas() {
     const tabela = document.getElementById('tabelaPecas');
     if (!tabela) return;
@@ -387,11 +430,45 @@ async function carregarPecas() {
         const data = await response.json();
         const pecas = Array.isArray(data) ? data : (data.value || data.itens || []);
 
+        // Os cartões mostram sempre o total global do catálogo.
         atualizarResumoPecas(pecas);
+
+        // A tabela aplica os filtros escolhidos no modal.
+        let pecasFiltradas = [...pecas];
+
+        if (filtroEstadoStockPecas === 'ativas') {
+            pecasFiltradas = pecasFiltradas.filter(peca => {
+                const stock = Number(peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+                return stock > 0;
+            });
+        }
+
+        if (filtroEstadoStockPecas === 'inativas') {
+            pecasFiltradas = pecasFiltradas.filter(peca => {
+                const stock = Number(peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+                return stock === 0;
+            });
+        }
+
+        if (ordenacaoPrecoPecas === 'crescente') {
+            pecasFiltradas.sort((a, b) => {
+                const precoA = Number(a.precoUnitario ?? a.PrecoUnitario ?? 0);
+                const precoB = Number(b.precoUnitario ?? b.PrecoUnitario ?? 0);
+                return precoA - precoB;
+            });
+        }
+
+        if (ordenacaoPrecoPecas === 'decrescente') {
+            pecasFiltradas.sort((a, b) => {
+                const precoA = Number(a.precoUnitario ?? a.PrecoUnitario ?? 0);
+                const precoB = Number(b.precoUnitario ?? b.PrecoUnitario ?? 0);
+                return precoB - precoA;
+            });
+        }
 
         totalPaginasPecas = Math.max(
             1,
-            Math.ceil(pecas.length / pecasPorPagina)
+            Math.ceil(pecasFiltradas.length / pecasPorPagina)
         );
 
         // Evita ficar numa página inexistente depois de eliminar uma peça.
@@ -401,7 +478,7 @@ async function carregarPecas() {
 
         const inicio = (paginaAtualPecas - 1) * pecasPorPagina;
 
-        const pecasDaPagina = pecas.slice(
+        const pecasDaPagina = pecasFiltradas.slice(
             inicio,
             inicio + pecasPorPagina
         );
@@ -411,7 +488,7 @@ async function carregarPecas() {
         if (pecasDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaPecas',
-                7,
+                8,
                 'Não existem peças registadas com os filtros selecionados.'
             );
             return;
@@ -429,7 +506,7 @@ async function carregarPecas() {
 
             return `
                 <tr>
-                    <td>${referencia}</td>
+                    <td><strong>${referencia}</strong></td>
                     <td>${nome}</td>
                     <td>${categoria}</td>
                     <td>${compatibilidade}</td>
@@ -441,12 +518,14 @@ async function carregarPecas() {
                         </span>
                     </td>
                     <td>
-                        <button class="btn-action btn-edit" onclick="abrirModalEditarPeca('${id}')" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
+                        <button class="btn-action btn-edit"
+                                onclick="abrirModalEditarPeca('${id}')">
+                            <i class="fa-solid fa-pen"></i> Editar
                         </button>
 
-                        <button class="btn-action btn-delete" onclick="eliminarPeca('${id}')" title="Eliminar">
-                            <i class="fa-solid fa-trash"></i>
+                        <button class="btn-action btn-delete"
+                                onclick="eliminarPeca('${id}')">
+                            <i class="fa-solid fa-trash"></i> Eliminar
                         </button>
                     </td>
                 </tr>
