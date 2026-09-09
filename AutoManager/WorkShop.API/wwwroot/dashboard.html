@@ -403,11 +403,37 @@
                 </div>
             </section>
 
+            <!-- Cartão de resumo dos clientes -->
+            <div id="clientesCards" class="cards-grid clientes-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Clientes</h3>
+                        <div class="number" id="totalClientes">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+
             <section id="secaoClientes" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Clientes</h2>
-                    <button class="btn-new" onclick="abrirModalNovoCliente()">
-                        <i class="fa-solid fa-plus"></i> Novo Cliente
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-users"></i>
+                            Gestão de clientes
+                        </p>
+
+                        <h2>Clientes</h2>
+
+                        <p class="section-description">
+                            Consulta, cria e gere os clientes registados na oficina.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoCliente()">
+                        <i class="fa-solid fa-plus"></i> Novo cliente
                     </button>
                 </div>
                 <table>

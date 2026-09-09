@@ -115,6 +115,13 @@ function mostrarSecao(secao) {
         secaoClientesEl.classList.toggle('view-hidden', secao !== 'clientes');
     }
 
+    // Mostra o cartão de total apenas na secção Clientes.
+    const clientesCardsEl = document.getElementById('clientesCards');
+
+    if (clientesCardsEl) {
+        clientesCardsEl.classList.toggle('view-hidden', secao !== 'clientes');
+    }
+
     const secaoAdminsEl = document.getElementById('secaoAdmins');
     if (secaoAdminsEl) {
         secaoAdminsEl.classList.toggle('view-hidden', secao !== 'admins');
@@ -855,42 +862,6 @@ function mudarPaginaClientes(direcao) {
     carregarClientes();
 }
 
-//async function carregarClientes() {
-//    try {
-//        const response = await fetch('https://localhost:7194/api/Auth/users', {
-//            credentials: 'include'
-//        });
-
-//        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
-
-//        const utilizadores = await response.json();
-
-//        // Filtra e guarda na variável global
-//        clientesCarregados = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
-
-//        const tabelaClientes = document.getElementById('tabelaClientesBody');
-//        tabelaClientes.innerHTML = clientesCarregados.map(cliente => `
-//            <tr>
-//                <td class="user-id">${escaparHtml(cliente.id)}</td>
-//                <td>${escaparHtml(cliente.firstName)}</td>
-//                <td>${escaparHtml(cliente.email)}</td>
-//                <td>${escaparHtml(cliente.role)}</td>
-//                <td>
-//                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
-//                        <i class="fa-solid fa-pen"></i> Editar
-//                    </button>
-//                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
-//                        <i class="fa-solid fa-trash"></i> Eliminar
-//                    </button>
-//                </td>
-//            </tr>
-//        `).join('');
-
-//    } catch (error) {
-//        console.error("Erro ao carregar clientes:", error);
-//    }
-//}
-
 async function carregarClientes() {
     const tabelaClientes = document.getElementById('tabelaClientesBody');
 
@@ -915,6 +886,12 @@ async function carregarClientes() {
         clientesCarregados = utilizadores.filter(
             utilizador => utilizador.role?.toLowerCase() === 'cliente'
         );
+
+        const totalClientesEl = document.getElementById('totalClientes');
+
+        if (totalClientesEl) {
+            totalClientesEl.textContent = clientesCarregados.length;
+        }
 
         totalPaginasClientes = Math.max(
             1,
