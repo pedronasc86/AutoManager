@@ -5,6 +5,7 @@ using WorkShop.API.Extensions;
 using WorkShop.API.HealthChecks;
 using WorkShop.API.Services;
 using WorkShop.API.Services.Auth;
+using WorkShop.API.Services.Ordens;
 using WorkShop.API.Services.Pedidos;
 
 namespace WorkShop.API
@@ -55,6 +56,7 @@ namespace WorkShop.API
                 .AddCheck<PartsCatalogHealthCheck>("parts_catalog_health_check");
 
             builder.Services.AddScoped<IPedidoReparacaoService, PedidoReparacaoService>();
+            builder.Services.AddScoped<IOrdensReparacaoService, OrdensReparacaoService>();
             // Regista o HttpClient apontando para o URL da PartsCatalog.API
             //builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
             //{
