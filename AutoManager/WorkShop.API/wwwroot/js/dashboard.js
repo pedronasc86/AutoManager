@@ -103,6 +103,13 @@ function mostrarSecao(secao) {
         secaoVeiculosEl.classList.toggle('view-hidden', secao !== 'veiculos');
     }
 
+    // Mostra o cartão de veículos apenas na secção Veículos.
+    const veiculosCardsEl = document.getElementById('veiculosCards');
+
+    if (veiculosCardsEl) {
+        veiculosCardsEl.classList.toggle('view-hidden', secao !== 'veiculos');
+    }
+
     const secaoClientesEl = document.getElementById('secaoClientes');
     if (secaoClientesEl) {
         secaoClientesEl.classList.toggle('view-hidden', secao !== 'clientes');
@@ -777,6 +784,13 @@ async function carregarVeiculos() {
 
         const veiculos = await response.json();
 
+        // Atualiza o cartão com o total de veículos recebido da base de dados.
+        const totalVeiculosEl = document.getElementById('totalVeiculos');
+
+        if (totalVeiculosEl) {
+            totalVeiculosEl.textContent = veiculos.length;
+        }
+
         if (veiculos.length === 0) {
             mostrarTabelaVazia(
                 'tabelaVeiculos',
@@ -809,6 +823,13 @@ async function carregarVeiculos() {
         `).join('');
     } catch (error) {
         console.error(error);
+
+        const totalVeiculosEl = document.getElementById('totalVeiculos');
+
+        if (totalVeiculosEl) {
+            totalVeiculosEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaVeiculos',
             6,

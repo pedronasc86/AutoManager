@@ -128,22 +128,22 @@
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
             <section id="secaoOrdens" class="table-section">
                 <!--<div class="table-header">
-                    <h2>Ordens de Reparação</h2>
-                    <button id="btnNovaOrdem" class="btn-new view-hidden"
-                            onclick="abrirModalNovaOrdem()">
-                        <i class="fa-solid fa-plus"></i> Nova Ordem
-                    </button>
-                </div>
-                <div class="table-filter-row">
-                    <input type="number" id="filtroVeiculoId"
-                           min="1" placeholder="ID do veículo">
-                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-                        <i class="fa-solid fa-filter"></i> Filtrar
-                    </button>
-                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-                        Limpar
-                    </button>
-                </div>-->
+            <h2>Ordens de Reparação</h2>
+            <button id="btnNovaOrdem" class="btn-new view-hidden"
+                    onclick="abrirModalNovaOrdem()">
+                <i class="fa-solid fa-plus"></i> Nova Ordem
+            </button>
+        </div>
+        <div class="table-filter-row">
+            <input type="number" id="filtroVeiculoId"
+                   min="1" placeholder="ID do veículo">
+            <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
+                <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+            <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
+                Limpar
+            </button>
+        </div>-->
                 <div class="table-header orders-header">
                     <div>
                         <p class="section-eyebrow">
@@ -245,12 +245,37 @@
                 </div>
             </section>
 
-            <section id="secaoVeiculos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Veículos</h2>
+            <!-- Cartão de resumo dos veículos -->
+            <div id="veiculosCards" class="cards-grid veiculos-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Veículos</h3>
+                        <div class="number" id="totalVeiculos">0</div>
+                    </div>
 
-                    <button class="btn-new" onclick="abrirModalNovoVeiculo()">
-                        <i class="fa-solid fa-plus"></i> Novo Veículo
+                    <div class="card-icon">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                </div>
+            </div>
+
+            <section id="secaoVeiculos" class="table-section view-hidden">
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-car"></i>
+                            Gestão da oficina
+                        </p>
+
+                        <h2>Veículos</h2>
+
+                        <p class="section-description">
+                            Consulta e gere os veículos registados pelos clientes.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoVeiculo()">
+                        <i class="fa-solid fa-plus"></i> Novo veículo
                     </button>
                 </div>
 
