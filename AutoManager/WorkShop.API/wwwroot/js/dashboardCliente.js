@@ -1,9 +1,19 @@
 ﻿let paginaAtualCliente = 1;
 
+// Paginação da tabela de acompanhamento do Dashboard.
+const pedidosDashboardPorPagina = 5;
+let paginaAtualPedidosDashboard = 1;
+let pedidosDashboardCarregados = [];
+
 // Paginação do histórico aberto no modal.
 const pedidosPorPaginaHistorico = 5;
 let paginaAtualHistoricoPedidos = 1;
 let pedidosHistoricoCarregados = [];
+
+// Paginação do catálogo de peças do cliente.
+const pecasPorPaginaCliente = 5;
+let paginaAtualPecasCliente = 1;
+let pecasClienteCarregadas = [];
 
 function mostrarSecaoCliente(secao) {
     const secaoDashboard = document.getElementById('secaoDashboard');
@@ -724,40 +734,104 @@ function mudarPaginaHistoricoPedidos(direcao) {
 }
 
 async function carregarPecasDisponiveisCliente() {
-    const tabela = document.getElementById('tabelaPecasDisponiveis');
-    if (!tabela) return;
-    tabela.innerHTML = '';
-
     try {
-        const response = await fetch('http://localhost:5039/api/Pecas', {
-            method: 'GET',
-            credentials: 'include'
-        });
+        const response = await fetch(
+            'https://localhost:7039/api/pecas',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
 
-        if (!response.ok) throw new Error('Não foi possível carregar as peças.');
-
-        const data = await response.json();
-        const pecas = data.value || data;
-
-        if (!Array.isArray(pecas) || pecas.length === 0) {
-            mostrarTabelaVazia('tabelaPecasDisponiveis', 6, 'Não existem peças disponíveis em stock.');
-            return;
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar as peças.');
         }
 
-        tabela.innerHTML = pecas.map(p => `
-            <tr>
-                <td><strong>${escaparHtml(p.referenciaPeca || p.id)}</strong></td>
-                <td>${escaparHtml(p.nome)}</td>
-                <td>${escaparHtml(p.categoria || '-')}</td>
-                <td>${escaparHtml(p.compatibilidade || 'Geral')}</td>
-                <td><strong>${Number(p.precoUnitario || 0).toFixed(2)} €</strong></td>
-                <td>${p.stockDisponivel ?? 0}</td>
-            </tr>
-        `).join('');
+        const data = await response.json();
+
+        pecasClienteCarregadas = Array.isArray(data)
+            ? data
+            : (data.value || []);
+
+        paginaAtualPecasCliente = 1;
+
+        renderizarPecasDisponiveisCliente();
+
     } catch (error) {
         console.error(error);
-        mostrarTabelaVazia('tabelaPecasDisponiveis', 6, 'Erro ao carregar peças.');
+
+        pecasClienteCarregadas = [];
+        renderizarPecasDisponiveisCliente(true);
     }
+}
+
+function renderizarPecasDisponiveisCliente(temErro = false) {
+    const tabela = document.getElementById('tabelaPecasDisponiveis');
+
+    if (!tabela) return;
+
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pecasClienteCarregadas.length / pecasPorPaginaCliente)
+    );
+
+    if (paginaAtualPecasCliente > totalPaginas) {
+        paginaAtualPecasCliente = totalPaginas;
+    }
+
+    const inicio = (paginaAtualPecasCliente - 1) * pecasPorPaginaCliente;
+
+    const pecasDaPagina = pecasClienteCarregadas.slice(
+        inicio,
+        inicio + pecasPorPaginaCliente
+    );
+
+    if (pecasDaPagina.length === 0) {
+        mostrarTabelaVazia(
+            'tabelaPecasDisponiveis',
+            6,
+            temErro
+                ? 'Erro ao carregar peças.'
+                : 'Não existem peças disponíveis em stock.'
+        );
+
+    } else {
+        tabela.innerHTML = pecasDaPagina.map(peca => `
+            <tr>
+                <td><strong>${escaparHtml(peca.referenciaPeca || peca.id)}</strong></td>
+                <td>${escaparHtml(peca.nome)}</td>
+                <td>${escaparHtml(peca.categoria || '-')}</td>
+                <td>${escaparHtml(peca.compatibilidade || 'Geral')}</td>
+                <td><strong>${Number(peca.precoUnitario || 0).toFixed(2)} €</strong></td>
+                <td>${peca.stockDisponivel ?? 0}</td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('infoPaginaPecasCliente').textContent =
+        `Página ${paginaAtualPecasCliente} de ${totalPaginas}`;
+
+    document.getElementById('btnAnteriorPecasCliente').disabled =
+        paginaAtualPecasCliente <= 1;
+
+    document.getElementById('btnSeguintePecasCliente').disabled =
+        paginaAtualPecasCliente >= totalPaginas;
+}
+
+function mudarPaginaPecasCliente(direcao) {
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(pecasClienteCarregadas.length / pecasPorPaginaCliente)
+    );
+
+    const novaPagina = paginaAtualPecasCliente + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginas) {
+        return;
+    }
+
+    paginaAtualPecasCliente = novaPagina;
+    renderizarPecasDisponiveisCliente();
 }
 
 async function carregarMinhasOrdens(pagina = 1) {
