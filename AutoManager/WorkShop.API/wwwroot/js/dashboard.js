@@ -127,9 +127,21 @@ function mostrarSecao(secao) {
         secaoAdminsEl.classList.toggle('view-hidden', secao !== 'admins');
     }
 
+    const adminsCardsEl = document.getElementById('adminsCards');
+
+    if (adminsCardsEl) {
+        adminsCardsEl.classList.toggle('view-hidden', secao !== 'admins');
+    }
+
     const secaoPedidosEl = document.getElementById('secaoPedidos');
     if (secaoPedidosEl) {
         secaoPedidosEl.classList.toggle('view-hidden', secao !== 'pedidos');
+    }
+
+    const pedidosCardsEl = document.getElementById('pedidosCards');
+
+    if (pedidosCardsEl) {
+        pedidosCardsEl.classList.toggle('view-hidden', secao !== 'pedidos');
     }
 
     document.querySelectorAll('.menu li').forEach(item => {
@@ -174,28 +186,92 @@ function mostrarTabelaVazia(tabelaId, numeroColunas, mensagem) {
     }
 }
 
+// Paginação dos pedidos: cinco por página.
+const pedidosPorPagina = 5;
+let paginaAtualPedidos = 1;
+let totalPaginasPedidos = 1;
+
+function mudarPaginaPedidos(direcao) {
+    const novaPagina = paginaAtualPedidos + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasPedidos) {
+        return;
+    }
+
+    paginaAtualPedidos = novaPagina;
+    carregarPedidos();
+}
+
+function atualizarPaginacaoPedidos() {
+    document.getElementById('infoPaginaPedidos').textContent =
+        `Página ${paginaAtualPedidos} de ${totalPaginasPedidos}`;
+
+    document.getElementById('btnPaginaAnteriorPedidos').disabled =
+        paginaAtualPedidos === 1;
+
+    document.getElementById('btnPaginaSeguintePedidos').disabled =
+        paginaAtualPedidos === totalPaginasPedidos;
+}
+
 // Carregar pedidos de reparação para a tabela
 async function carregarPedidos() {
     const tabela = document.getElementById('tabelaGestaoPedidos');
-    if (!tabela) return;
+
+    if (!tabela) {
+        return;
+    }
+
     tabela.innerHTML = '';
 
     try {
-        const response = await fetch('https://localhost:7085/api/pedidos/pendentes', {
-            method: 'GET',
-            credentials: 'include'
-        });
+        const response = await fetch(
+            'https://localhost:7085/api/pedidos/pendentes',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
 
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
 
         const data = await response.json();
-        const pedidos = Array.isArray(data) ? data : (data.itens || data.pedidos || []);
 
+        const pedidos = Array.isArray(data)
+            ? data
+            : (data.itens || data.pedidos || []);
+
+        // Mantém todos em cache para o modal de análise.
         window.listaPedidosCache = pedidos;
 
-        if (pedidos.length === 0) {
+        const totalPedidosEl = document.getElementById(
+            'totalPedidosPendentes'
+        );
+
+        if (totalPedidosEl) {
+            totalPedidosEl.textContent = pedidos.length;
+        }
+
+        totalPaginasPedidos = Math.max(
+            1,
+            Math.ceil(pedidos.length / pedidosPorPagina)
+        );
+
+        if (paginaAtualPedidos > totalPaginasPedidos) {
+            paginaAtualPedidos = totalPaginasPedidos;
+        }
+
+        const inicio = (paginaAtualPedidos - 1) * pedidosPorPagina;
+
+        const pedidosDaPagina = pedidos.slice(
+            inicio,
+            inicio + pedidosPorPagina
+        );
+
+        atualizarPaginacaoPedidos();
+
+        if (pedidosDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaGestaoPedidos',
                 7,
@@ -204,27 +280,50 @@ async function carregarPedidos() {
             return;
         }
 
-        tabela.innerHTML = pedidos.map(pedido => `
+        tabela.innerHTML = pedidosDaPagina.map(pedido => `
             <tr>
-                <td>${formatarData(pedido.dataCriacao || pedido.dataEntrada || pedido.data)}</td>
+                <td>${formatarData(
+            pedido.dataCriacao || pedido.dataEntrada || pedido.data
+        )}</td>
+
                 <td>${escaparHtml(pedido.clienteId)}</td>
-                <td>${escaparHtml(pedido.veiculoId)}</td>
-                <td>${escaparHtml(pedido.problemaReportado || pedido.descricaoProblema || pedido.descricao)}</td>
+
+                <td><strong>#${escaparHtml(pedido.veiculoId)}</strong></td>
+
+                <td>${escaparHtml(
+            pedido.problemaReportado ||
+            pedido.descricaoProblema ||
+            pedido.descricao
+        )}</td>
+
                 <td>
                     <span class="badge curso">
                         ${escaparHtml(pedido.estado || 'Pendente')}
                     </span>
                 </td>
+
                 <td>${escaparHtml(pedido.observacoes || '-')}</td>
+
                 <td>
-                    <button class="btn-action" onclick="verDetalhesPedido(${pedido.id})">
-                        <i class="fa-solid fa-eye"></i> Ver
+                    <button class="btn-action btn-edit"
+                            onclick="verDetalhesPedido(${pedido.id})">
+                        <i class="fa-solid fa-clipboard-check"></i> Analisar
                     </button>
                 </td>
             </tr>
         `).join('');
+
     } catch (error) {
         console.error(error);
+
+        const totalPedidosEl = document.getElementById(
+            'totalPedidosPendentes'
+        );
+
+        if (totalPedidosEl) {
+            totalPedidosEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaGestaoPedidos',
             7,
@@ -774,6 +873,33 @@ function preencherSelectsPecas() {
     });
 }
 
+// Paginação dos veículos: cinco por página.
+const veiculosPorPagina = 5;
+let paginaAtualVeiculos = 1;
+let totalPaginasVeiculos = 1;
+
+function mudarPaginaVeiculos(direcao) {
+    const novaPagina = paginaAtualVeiculos + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasVeiculos) {
+        return;
+    }
+
+    paginaAtualVeiculos = novaPagina;
+    carregarVeiculos();
+}
+
+function atualizarPaginacaoVeiculos() {
+    document.getElementById('infoPaginaVeiculos').textContent =
+        `Página ${paginaAtualVeiculos} de ${totalPaginasVeiculos}`;
+
+    document.getElementById('btnPaginaAnteriorVeiculos').disabled =
+        paginaAtualVeiculos === 1;
+
+    document.getElementById('btnPaginaSeguinteVeiculos').disabled =
+        paginaAtualVeiculos === totalPaginasVeiculos;
+}
+
 async function carregarVeiculos() {
     const tabela = document.getElementById('tabelaVeiculos');
     if (!tabela) return;
@@ -791,23 +917,40 @@ async function carregarVeiculos() {
 
         const veiculos = await response.json();
 
-        // Atualiza o cartão com o total de veículos recebido da base de dados.
         const totalVeiculosEl = document.getElementById('totalVeiculos');
 
         if (totalVeiculosEl) {
             totalVeiculosEl.textContent = veiculos.length;
         }
 
-        if (veiculos.length === 0) {
+        totalPaginasVeiculos = Math.max(
+            1,
+            Math.ceil(veiculos.length / veiculosPorPagina)
+        );
+
+        if (paginaAtualVeiculos > totalPaginasVeiculos) {
+            paginaAtualVeiculos = totalPaginasVeiculos;
+        }
+
+        const inicio = (paginaAtualVeiculos - 1) * veiculosPorPagina;
+
+        const veiculosDaPagina = veiculos.slice(
+            inicio,
+            inicio + veiculosPorPagina
+        );
+
+        atualizarPaginacaoVeiculos();
+
+        if (veiculosDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaVeiculos',
-                6,
+                7,
                 'Não existem veículos registados.'
             );
             return;
         }
 
-        tabela.innerHTML = veiculos.map(veiculo => `
+        tabela.innerHTML = veiculosDaPagina.map(veiculo => `
             <tr>
                 <td><strong>#${veiculo.id}</strong></td>
                 <td>${escaparHtml(veiculo.matricula)}</td>
@@ -963,9 +1106,40 @@ document.addEventListener('DOMContentLoaded', carregarClientes);
 
 let adminsCarregados = [];
 
+// Paginação dos administradores: cinco por página.
+const adminsPorPagina = 5;
+let paginaAtualAdmins = 1;
+let totalPaginasAdmins = 1;
+
+function mudarPaginaAdmins(direcao) {
+    const novaPagina = paginaAtualAdmins + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasAdmins) {
+        return;
+    }
+
+    paginaAtualAdmins = novaPagina;
+    carregarAdmins();
+}
+
+function atualizarPaginacaoAdmins() {
+    document.getElementById('infoPaginaAdmins').textContent =
+        `Página ${paginaAtualAdmins} de ${totalPaginasAdmins}`;
+
+    document.getElementById('btnPaginaAnteriorAdmins').disabled =
+        paginaAtualAdmins === 1;
+
+    document.getElementById('btnPaginaSeguinteAdmins').disabled =
+        paginaAtualAdmins === totalPaginasAdmins;
+}
+
 async function carregarAdmins() {
     const tabela = document.getElementById('tabelaAdmins');
-    if (!tabela) return;
+
+    if (!tabela) {
+        return;
+    }
+
     tabela.innerHTML = '';
 
     try {
@@ -984,7 +1158,31 @@ async function carregarAdmins() {
         const admins = await response.json();
         adminsCarregados = admins;
 
-        if (admins.length === 0) {
+        const totalAdminsEl = document.getElementById('totalAdmins');
+
+        if (totalAdminsEl) {
+            totalAdminsEl.textContent = admins.length;
+        }
+
+        totalPaginasAdmins = Math.max(
+            1,
+            Math.ceil(admins.length / adminsPorPagina)
+        );
+
+        if (paginaAtualAdmins > totalPaginasAdmins) {
+            paginaAtualAdmins = totalPaginasAdmins;
+        }
+
+        const inicio = (paginaAtualAdmins - 1) * adminsPorPagina;
+
+        const adminsDaPagina = admins.slice(
+            inicio,
+            inicio + adminsPorPagina
+        );
+
+        atualizarPaginacaoAdmins();
+
+        if (adminsDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaAdmins',
                 5,
@@ -993,17 +1191,19 @@ async function carregarAdmins() {
             return;
         }
 
-        tabela.innerHTML = admins.map(admin => `
+        tabela.innerHTML = adminsDaPagina.map(admin => `
             <tr>
                 <td class="user-id">${escaparHtml(admin.id)}</td>
                 <td>${escaparHtml(admin.firstName)}</td>
                 <td>${escaparHtml(admin.email)}</td>
                 <td>${escaparHtml(admin.role)}</td>
+
                 <td>
                     <button class="btn-action btn-edit"
                             onclick="abrirModalEditarAdmin('${admin.id}')">
                         <i class="fa-solid fa-pen"></i> Editar
                     </button>
+
                     <button class="btn-action btn-delete"
                             onclick="eliminarAdmin('${admin.id}')">
                         <i class="fa-solid fa-trash"></i> Eliminar
@@ -1011,8 +1211,16 @@ async function carregarAdmins() {
                 </td>
             </tr>
         `).join('');
+
     } catch (error) {
         console.error(error);
+
+        const totalAdminsEl = document.getElementById('totalAdmins');
+
+        if (totalAdminsEl) {
+            totalAdminsEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaAdmins',
             5,

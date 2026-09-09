@@ -102,10 +102,35 @@
                 </div>
             </div>
 
+            <!-- Cartão de resumo dos pedidos -->
+            <div id="pedidosCards" class="cards-grid pedidos-cards view-hidden">
+                <div class="card curso">
+                    <div class="card-info">
+                        <h3>Pedidos Pendentes</h3>
+                        <div class="number" id="totalPedidosPendentes">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                </div>
+            </div>
+
             <!-- TABELA DE GESTÃO DE PEDIDOS -->
             <section id="secaoPedidos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Gestão de Pedidos de Reparação</h2>
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                            Gestão da oficina
+                        </p>
+
+                        <h2>Pedidos de Reparação</h2>
+
+                        <p class="section-description">
+                            Analisa os pedidos pendentes enviados pelos clientes.
+                        </p>
+                    </div>
                 </div>
                 <table>
                     <thead>
@@ -123,6 +148,21 @@
                         <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
+                <div class="paginacao" id="paginacaoPedidos">
+                    <button id="btnPaginaAnteriorPedidos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPedidos(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaPedidos">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguintePedidos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPedidos(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
@@ -294,6 +334,23 @@
 
                     <tbody id="tabelaVeiculos"></tbody>
                 </table>
+
+                <!-- Paginação: reutiliza o mesmo HTML/CSS dos Clientes -->
+                <div class="paginacao" id="paginacaoVeiculos">
+                    <button id="btnPaginaAnteriorVeiculos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaVeiculos(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaVeiculos">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinteVeiculos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaVeiculos(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <!-- SECÇÃO DE PEÇAS ATUALIZADA PARA O CRUD -->
@@ -466,11 +523,37 @@
                 </div>
             </section>
 
+            <!-- Cartão de resumo dos administradores -->
+            <div id="adminsCards" class="cards-grid admins-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Administradores</h3>
+                        <div class="number" id="totalAdmins">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+
             <section id="secaoAdmins" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Administradores</h2>
-                    <button class="btn-new" onclick="abrirModalNovoAdmin()">
-                        <i class="fa-solid fa-plus"></i> Novo Admin
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-user-shield"></i>
+                            Gestão de acessos
+                        </p>
+
+                        <h2>Administradores</h2>
+
+                        <p class="section-description">
+                            Gere os administradores com acesso ao painel da oficina.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoAdmin()">
+                        <i class="fa-solid fa-plus"></i> Novo admin
                     </button>
                 </div>
                 <table>
@@ -485,6 +568,21 @@
                     </thead>
                     <tbody id="tabelaAdmins"></tbody>
                 </table>
+                <div class="paginacao" id="paginacaoAdmins">
+                    <button id="btnPaginaAnteriorAdmins"
+                            class="btn-pagina"
+                            onclick="mudarPaginaAdmins(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaAdmins">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinteAdmins"
+                            class="btn-pagina"
+                            onclick="mudarPaginaAdmins(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
         </div>
