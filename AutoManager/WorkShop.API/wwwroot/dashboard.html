@@ -78,34 +78,135 @@
 
         <div class="content">
             <!-- CARDS DE ESTATÍSTICA -->
-            <div id="dashboardCards" class="cards-grid">
-                <div class="card total">
-                    <div class="card-info">
-                        <h3>Ordens Totais</h3>
-                        <div class="number" id="totalOrdens">0</div>
+            <div id="dashboardCards" class="dashboard-overview">
+
+                <!-- Gráfico das ordens -->
+                <section class="dashboard-chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <p class="section-eyebrow">
+                                <i class="fa-solid fa-screwdriver-wrench"></i>
+                                Ordens de reparação
+                            </p>
+                            <h3>Estado das ordens</h3>
+                        </div>
+                        <i class="fa-solid fa-chart-pie chart-header-icon"></i>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-folder-open"></i></div>
+
+                    <div class="chart-content">
+                        <div id="graficoOrdens" class="donut-chart donut-ordens">
+                            <span id="dashTotalOrdens">0</span>
+                        </div>
+
+                        <div class="chart-legend">
+                            <div>
+                                <span class="legend-dot legend-orange"></span>
+                                Em curso: <strong id="dashEmCurso">0</strong>
+                            </div>
+                            <div>
+                                <span class="legend-dot legend-green"></span>
+                                Concluídas: <strong id="dashConcluidas">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Gráfico das peças -->
+                <section class="dashboard-chart-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <p class="section-eyebrow">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Inventário
+                            </p>
+                            <h3>Estado das peças</h3>
+                        </div>
+                        <i class="fa-solid fa-chart-pie chart-header-icon"></i>
+                    </div>
+
+                    <div class="chart-content">
+                        <div id="graficoPecas" class="donut-chart donut-pecas">
+                            <span id="dashTotalPecas">0</span>
+                        </div>
+
+                        <div class="chart-legend">
+                            <div>
+                                <span class="legend-dot legend-green"></span>
+                                Em stock: <strong id="dashPecasEmStock">0</strong>
+                            </div>
+                            <div>
+                                <span class="legend-dot legend-red"></span>
+                                Fora de stock: <strong id="dashPecasForaStock">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Restantes cartões -->
+                <div class="dashboard-quick-cards">
+                    <div class="card total">
+                        <div class="card-info">
+                            <h3>Total de veículos</h3>
+                            <div class="number" id="dashTotalVeiculos">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-car"></i></div>
+                    </div>
+
+                    <div class="card concluidas">
+                        <div class="card-info">
+                            <h3>Total de clientes</h3>
+                            <div class="number" id="dashTotalClientes">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-users"></i></div>
+                    </div>
+
+                    <div class="card curso">
+                        <div class="card-info">
+                            <h3>Pedidos pendentes</h3>
+                            <div class="number" id="dashPedidosPendentes">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                    </div>
+
+                    <div class="card total">
+                        <div class="card-info">
+                            <h3>Administradores</h3>
+                            <div class="number" id="dashTotalAdmins">0</div>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-user-shield"></i></div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Cartão de resumo dos pedidos -->
+            <div id="pedidosCards" class="cards-grid pedidos-cards view-hidden">
                 <div class="card curso">
                     <div class="card-info">
-                        <h3>Em Curso</h3>
-                        <div class="number" id="emCurso">0</div>
+                        <h3>Pedidos Pendentes</h3>
+                        <div class="number" id="totalPedidosPendentes">0</div>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-spinner"></i></div>
-                </div>
-                <div class="card concluidas">
-                    <div class="card-info">
-                        <h3>Concluídas</h3>
-                        <div class="number" id="concluidas">0</div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
                     </div>
-                    <div class="card-icon"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
             </div>
 
             <!-- TABELA DE GESTÃO DE PEDIDOS -->
             <section id="secaoPedidos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Gestão de Pedidos de Reparação</h2>
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                            Gestão da oficina
+                        </p>
+
+                        <h2>Pedidos de Reparação</h2>
+
+                        <p class="section-description">
+                            Analisa os pedidos pendentes enviados pelos clientes.
+                        </p>
+                    </div>
                 </div>
                 <table>
                     <thead>
@@ -123,27 +224,25 @@
                         <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
+                <div class="paginacao" id="paginacaoPedidos">
+                    <button id="btnPaginaAnteriorPedidos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPedidos(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaPedidos">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguintePedidos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPedidos(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <!-- TABELA DE ORDENS DE REPARAÇÃO E HISTÓRICO -->
-            <section id="secaoOrdens" class="table-section">
-                <!--<div class="table-header">
-                    <h2>Ordens de Reparação</h2>
-                    <button id="btnNovaOrdem" class="btn-new view-hidden"
-                            onclick="abrirModalNovaOrdem()">
-                        <i class="fa-solid fa-plus"></i> Nova Ordem
-                    </button>
-                </div>
-                <div class="table-filter-row">
-                    <input type="number" id="filtroVeiculoId"
-                           min="1" placeholder="ID do veículo">
-                    <button class="btn-filter" onclick="aplicarFiltroVeiculo()">
-                        <i class="fa-solid fa-filter"></i> Filtrar
-                    </button>
-                    <button class="btn-clear-filter" onclick="limparFiltroVeiculo()">
-                        Limpar
-                    </button>
-                </div>-->
+            <section id="secaoOrdens" class="table-section view-hidden">
                 <div class="table-header orders-header">
                     <div>
                         <p class="section-eyebrow">
@@ -245,12 +344,37 @@
                 </div>
             </section>
 
-            <section id="secaoVeiculos" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Veículos</h2>
+            <!-- Cartão de resumo dos veículos -->
+            <div id="veiculosCards" class="cards-grid veiculos-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Veículos</h3>
+                        <div class="number" id="totalVeiculos">0</div>
+                    </div>
 
-                    <button class="btn-new" onclick="abrirModalNovoVeiculo()">
-                        <i class="fa-solid fa-plus"></i> Novo Veículo
+                    <div class="card-icon">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                </div>
+            </div>
+
+            <section id="secaoVeiculos" class="table-section view-hidden">
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-car"></i>
+                            Gestão da oficina
+                        </p>
+
+                        <h2>Veículos</h2>
+
+                        <p class="section-description">
+                            Consulta e gere os veículos registados pelos clientes.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoVeiculo()">
+                        <i class="fa-solid fa-plus"></i> Novo veículo
                     </button>
                 </div>
 
@@ -269,6 +393,23 @@
 
                     <tbody id="tabelaVeiculos"></tbody>
                 </table>
+
+                <!-- Paginação: reutiliza o mesmo HTML/CSS dos Clientes -->
+                <div class="paginacao" id="paginacaoVeiculos">
+                    <button id="btnPaginaAnteriorVeiculos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaVeiculos(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaVeiculos">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinteVeiculos"
+                            class="btn-pagina"
+                            onclick="mudarPaginaVeiculos(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
             <!-- SECÇÃO DE PEÇAS ATUALIZADA PARA O CRUD -->
@@ -306,11 +447,44 @@
             </div>
 
             <section id="secaoPecas" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Peças</h2>
-                    <button class="btn-new" onclick="abrirModalNovaPeca()">
-                        <i class="fa-solid fa-plus"></i> Nova Peça
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                            Gestão do inventário
+                        </p>
+
+                        <h2>Catálogo de Peças</h2>
+
+                        <p class="section-description">
+                            Consulta, organiza e gere o stock disponível na oficina.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovaPeca()">
+                        <i class="fa-solid fa-plus"></i> Nova peça
                     </button>
+                </div>
+
+                <!-- Reutiliza o visual da caixa de filtros das Ordens -->
+                <div class="table-filter-row">
+                    <div class="filter-field">
+                        <label>Organização do catálogo</label>
+
+                        <div class="filter-controls">
+                            <button class="btn-filter"
+                                    type="button"
+                                    onclick="abrirModalFiltroPecas()">
+                                <i class="fa-solid fa-filter"></i> Filtrar peças
+                            </button>
+
+                            <button class="btn-clear-filter"
+                                    type="button"
+                                    onclick="limparFiltrosPecasModal()">
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <table>
                     <thead>
@@ -327,13 +501,55 @@
                     </thead>
                     <tbody id="tabelaPecas"></tbody>
                 </table>
+
+                <div class="paginacao" id="paginacaoPecas">
+                    <button id="btnPaginaAnteriorPecas"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPecas(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaPecas">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguintePecas"
+                            class="btn-pagina"
+                            onclick="mudarPaginaPecas(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
+            <!-- Cartão de resumo dos clientes -->
+            <div id="clientesCards" class="cards-grid clientes-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Clientes</h3>
+                        <div class="number" id="totalClientes">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+
             <section id="secaoClientes" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Clientes</h2>
-                    <button class="btn-new" onclick="abrirModalNovoCliente()">
-                        <i class="fa-solid fa-plus"></i> Novo Cliente
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-users"></i>
+                            Gestão de clientes
+                        </p>
+
+                        <h2>Clientes</h2>
+
+                        <p class="section-description">
+                            Consulta, cria e gere os clientes registados na oficina.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoCliente()">
+                        <i class="fa-solid fa-plus"></i> Novo cliente
                     </button>
                 </div>
                 <table>
@@ -366,11 +582,37 @@
                 </div>
             </section>
 
+            <!-- Cartão de resumo dos administradores -->
+            <div id="adminsCards" class="cards-grid admins-cards view-hidden">
+                <div class="card total">
+                    <div class="card-info">
+                        <h3>Total de Administradores</h3>
+                        <div class="number" id="totalAdmins">0</div>
+                    </div>
+
+                    <div class="card-icon">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+
             <section id="secaoAdmins" class="table-section view-hidden">
-                <div class="table-header">
-                    <h2>Administradores</h2>
-                    <button class="btn-new" onclick="abrirModalNovoAdmin()">
-                        <i class="fa-solid fa-plus"></i> Novo Admin
+                <div class="table-header orders-header">
+                    <div>
+                        <p class="section-eyebrow">
+                            <i class="fa-solid fa-user-shield"></i>
+                            Gestão de acessos
+                        </p>
+
+                        <h2>Administradores</h2>
+
+                        <p class="section-description">
+                            Gere os administradores com acesso ao painel da oficina.
+                        </p>
+                    </div>
+
+                    <button class="btn-new" type="button" onclick="abrirModalNovoAdmin()">
+                        <i class="fa-solid fa-plus"></i> Novo admin
                     </button>
                 </div>
                 <table>
@@ -385,6 +627,21 @@
                     </thead>
                     <tbody id="tabelaAdmins"></tbody>
                 </table>
+                <div class="paginacao" id="paginacaoAdmins">
+                    <button id="btnPaginaAnteriorAdmins"
+                            class="btn-pagina"
+                            onclick="mudarPaginaAdmins(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+
+                    <span id="infoPaginaAdmins">Página 1 de 1</span>
+
+                    <button id="btnPaginaSeguinteAdmins"
+                            class="btn-pagina"
+                            onclick="mudarPaginaAdmins(1)">
+                        Seguinte <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
             </section>
 
         </div>
@@ -602,6 +859,51 @@
                 </button>
 
                 <div id="mensagemVeiculo" class="mensagem-ordem"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- MODAL DE FILTRO DE PEÇAS -->
+    <div id="modalFiltroPecas" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Filtrar Peças</h3>
+
+                <button type="button"
+                        class="close-btn"
+                        onclick="fecharModalFiltroPecas()">
+                    &times;
+                </button>
+            </div>
+
+            <form id="formFiltroPecas"
+                  onsubmit="aplicarFiltroPecasModal(event)">
+
+                <div class="form-group">
+                    <label for="filtroEstadoStockPecas">Estado de stock</label>
+
+                    <select id="filtroEstadoStockPecas">
+                        <option value="todos">Todas as peças</option>
+                        <option value="ativas">Peças ativas — em stock</option>
+                        <option value="inativas">Peças inativas — fora de stock</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="filtroPrecoPecas">Ordenar por preço</label>
+
+                    <select id="filtroPrecoPecas">
+                        <option value="nenhuma">Sem ordenação</option>
+                        <option value="crescente">Preço: crescente</option>
+                        <option value="decrescente">Preço: decrescente</option>
+                    </select>
+                </div>
+
+                <div class="acoes-modal-filtro">
+                    <button type="submit" class="btn-submit-modal">
+                        <i class="fa-solid fa-filter"></i> Aplicar filtros
+                    </button>
+                </div>
             </form>
         </div>
     </div>

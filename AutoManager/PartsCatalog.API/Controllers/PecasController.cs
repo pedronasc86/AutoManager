@@ -58,7 +58,8 @@ namespace PartsCatalog.API.Controllers
             var novaPeca = _mapper.Map<Peca>(request);
 
             novaPeca.Id = Guid.NewGuid();
-            novaPeca.Ativo = true;
+
+            novaPeca.Ativo = novaPeca.StockDisponivel > 0;
 
             await _repository.CriarAsync(novaPeca);
 
@@ -77,6 +78,8 @@ namespace PartsCatalog.API.Controllers
                 return NotFound("Peça não encontrada.");
 
             _mapper.Map(request, peca);
+
+            peca.Ativo = peca.StockDisponivel > 0;
 
             await _repository.AtualizarAsync(peca);
 

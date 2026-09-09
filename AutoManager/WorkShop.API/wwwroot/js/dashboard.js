@@ -53,8 +53,8 @@ function mostrarSecao(secao) {
     secaoAtual = secao;
 
     //const mostrarDashboard = secao === 'dashboard';
-    const mostrarDashboard = secao === 'dashboard' || secao === 'ordens';
-    const mostrarOrdens = secao === 'dashboard' || secao === 'ordens';
+    const mostrarDashboard = secao === 'dashboard';
+    const mostrarOrdens = secao === 'ordens';
 
     const btnNovaOrdemEl = document.getElementById('btnNovaOrdem');
     if (btnNovaOrdemEl) {
@@ -103,9 +103,23 @@ function mostrarSecao(secao) {
         secaoVeiculosEl.classList.toggle('view-hidden', secao !== 'veiculos');
     }
 
+    // Mostra o cartão de veículos apenas na secção Veículos.
+    const veiculosCardsEl = document.getElementById('veiculosCards');
+
+    if (veiculosCardsEl) {
+        veiculosCardsEl.classList.toggle('view-hidden', secao !== 'veiculos');
+    }
+
     const secaoClientesEl = document.getElementById('secaoClientes');
     if (secaoClientesEl) {
         secaoClientesEl.classList.toggle('view-hidden', secao !== 'clientes');
+    }
+
+    // Mostra o cartão de total apenas na secção Clientes.
+    const clientesCardsEl = document.getElementById('clientesCards');
+
+    if (clientesCardsEl) {
+        clientesCardsEl.classList.toggle('view-hidden', secao !== 'clientes');
     }
 
     const secaoAdminsEl = document.getElementById('secaoAdmins');
@@ -113,9 +127,21 @@ function mostrarSecao(secao) {
         secaoAdminsEl.classList.toggle('view-hidden', secao !== 'admins');
     }
 
+    const adminsCardsEl = document.getElementById('adminsCards');
+
+    if (adminsCardsEl) {
+        adminsCardsEl.classList.toggle('view-hidden', secao !== 'admins');
+    }
+
     const secaoPedidosEl = document.getElementById('secaoPedidos');
     if (secaoPedidosEl) {
         secaoPedidosEl.classList.toggle('view-hidden', secao !== 'pedidos');
+    }
+
+    const pedidosCardsEl = document.getElementById('pedidosCards');
+
+    if (pedidosCardsEl) {
+        pedidosCardsEl.classList.toggle('view-hidden', secao !== 'pedidos');
     }
 
     document.querySelectorAll('.menu li').forEach(item => {
@@ -160,28 +186,92 @@ function mostrarTabelaVazia(tabelaId, numeroColunas, mensagem) {
     }
 }
 
+// Paginação dos pedidos: cinco por página.
+const pedidosPorPagina = 5;
+let paginaAtualPedidos = 1;
+let totalPaginasPedidos = 1;
+
+function mudarPaginaPedidos(direcao) {
+    const novaPagina = paginaAtualPedidos + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasPedidos) {
+        return;
+    }
+
+    paginaAtualPedidos = novaPagina;
+    carregarPedidos();
+}
+
+function atualizarPaginacaoPedidos() {
+    document.getElementById('infoPaginaPedidos').textContent =
+        `Página ${paginaAtualPedidos} de ${totalPaginasPedidos}`;
+
+    document.getElementById('btnPaginaAnteriorPedidos').disabled =
+        paginaAtualPedidos === 1;
+
+    document.getElementById('btnPaginaSeguintePedidos').disabled =
+        paginaAtualPedidos === totalPaginasPedidos;
+}
+
 // Carregar pedidos de reparação para a tabela
 async function carregarPedidos() {
     const tabela = document.getElementById('tabelaGestaoPedidos');
-    if (!tabela) return;
+
+    if (!tabela) {
+        return;
+    }
+
     tabela.innerHTML = '';
 
     try {
-        const response = await fetch('https://localhost:7085/api/pedidos/pendentes', {
-            method: 'GET',
-            credentials: 'include'
-        });
+        const response = await fetch(
+            'https://localhost:7085/api/pedidos/pendentes',
+            {
+                method: 'GET',
+                credentials: 'include'
+            }
+        );
 
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
 
         const data = await response.json();
-        const pedidos = Array.isArray(data) ? data : (data.itens || data.pedidos || []);
 
+        const pedidos = Array.isArray(data)
+            ? data
+            : (data.itens || data.pedidos || []);
+
+        // Mantém todos em cache para o modal de análise.
         window.listaPedidosCache = pedidos;
 
-        if (pedidos.length === 0) {
+        const totalPedidosEl = document.getElementById(
+            'totalPedidosPendentes'
+        );
+
+        if (totalPedidosEl) {
+            totalPedidosEl.textContent = pedidos.length;
+        }
+
+        totalPaginasPedidos = Math.max(
+            1,
+            Math.ceil(pedidos.length / pedidosPorPagina)
+        );
+
+        if (paginaAtualPedidos > totalPaginasPedidos) {
+            paginaAtualPedidos = totalPaginasPedidos;
+        }
+
+        const inicio = (paginaAtualPedidos - 1) * pedidosPorPagina;
+
+        const pedidosDaPagina = pedidos.slice(
+            inicio,
+            inicio + pedidosPorPagina
+        );
+
+        atualizarPaginacaoPedidos();
+
+        if (pedidosDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaGestaoPedidos',
                 7,
@@ -190,27 +280,50 @@ async function carregarPedidos() {
             return;
         }
 
-        tabela.innerHTML = pedidos.map(pedido => `
+        tabela.innerHTML = pedidosDaPagina.map(pedido => `
             <tr>
-                <td>${formatarData(pedido.dataCriacao || pedido.dataEntrada || pedido.data)}</td>
+                <td>${formatarData(
+            pedido.dataCriacao || pedido.dataEntrada || pedido.data
+        )}</td>
+
                 <td>${escaparHtml(pedido.clienteId)}</td>
-                <td>${escaparHtml(pedido.veiculoId)}</td>
-                <td>${escaparHtml(pedido.problemaReportado || pedido.descricaoProblema || pedido.descricao)}</td>
+
+                <td><strong>#${escaparHtml(pedido.veiculoId)}</strong></td>
+
+                <td>${escaparHtml(
+            pedido.problemaReportado ||
+            pedido.descricaoProblema ||
+            pedido.descricao
+        )}</td>
+
                 <td>
                     <span class="badge curso">
                         ${escaparHtml(pedido.estado || 'Pendente')}
                     </span>
                 </td>
+
                 <td>${escaparHtml(pedido.observacoes || '-')}</td>
+
                 <td>
-                    <button class="btn-action" onclick="verDetalhesPedido(${pedido.id})">
-                        <i class="fa-solid fa-eye"></i> Ver
+                    <button class="btn-action btn-edit"
+                            onclick="verDetalhesPedido(${pedido.id})">
+                        <i class="fa-solid fa-clipboard-check"></i> Analisar
                     </button>
                 </td>
             </tr>
         `).join('');
+
     } catch (error) {
         console.error(error);
+
+        const totalPedidosEl = document.getElementById(
+            'totalPedidosPendentes'
+        );
+
+        if (totalPedidosEl) {
+            totalPedidosEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaGestaoPedidos',
             7,
@@ -310,6 +423,78 @@ function atualizarResumoPecas(pecas) {
     document.getElementById('totalPecas').textContent = total;
     document.getElementById('pecasEmStock').textContent = emStock;
     document.getElementById('pecasForaStock').textContent = foraStock;
+
+    atualizarGraficoPecas(total, emStock, foraStock);
+}
+
+// Paginação das peças
+const pecasPorPagina = 5;
+let paginaAtualPecas = 1;
+let totalPaginasPecas = 1;
+
+function mudarPaginaPecas(direcao) {
+    const novaPagina = paginaAtualPecas + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasPecas) {
+        return;
+    }
+
+    paginaAtualPecas = novaPagina;
+    carregarPecas();
+}
+
+function atualizarPaginacaoPecas() {
+    document.getElementById('infoPaginaPecas').textContent =
+        `Página ${paginaAtualPecas} de ${totalPaginasPecas}`;
+
+    document.getElementById('btnPaginaAnteriorPecas').disabled =
+        paginaAtualPecas === 1;
+
+    document.getElementById('btnPaginaSeguintePecas').disabled =
+        paginaAtualPecas === totalPaginasPecas;
+}
+
+// Filtros aplicados à tabela de Peças.
+let filtroEstadoStockPecas = 'todos';
+let ordenacaoPrecoPecas = 'nenhuma';
+
+function abrirModalFiltroPecas() {
+    document.getElementById('filtroEstadoStockPecas').value =
+        filtroEstadoStockPecas;
+
+    document.getElementById('filtroPrecoPecas').value =
+        ordenacaoPrecoPecas;
+
+    document.getElementById('modalFiltroPecas').style.display = 'flex';
+}
+
+function fecharModalFiltroPecas() {
+    document.getElementById('modalFiltroPecas').style.display = 'none';
+}
+
+function aplicarFiltroPecasModal(event) {
+    event.preventDefault();
+
+    filtroEstadoStockPecas =
+        document.getElementById('filtroEstadoStockPecas').value;
+
+    ordenacaoPrecoPecas =
+        document.getElementById('filtroPrecoPecas').value;
+
+    // Sempre que um filtro muda, volta à primeira página.
+    paginaAtualPecas = 1;
+
+    fecharModalFiltroPecas();
+    carregarPecas();
+}
+
+function limparFiltrosPecasModal() {
+    filtroEstadoStockPecas = 'todos';
+    ordenacaoPrecoPecas = 'nenhuma';
+    paginaAtualPecas = 1;
+
+    fecharModalFiltroPecas();
+    carregarPecas();
 }
 
 async function carregarPecas() {
@@ -360,18 +545,71 @@ async function carregarPecas() {
         const data = await response.json();
         const pecas = Array.isArray(data) ? data : (data.value || data.itens || []);
 
+        // Os cartões mostram sempre o total global do catálogo.
         atualizarResumoPecas(pecas);
 
-        if (pecas.length === 0) {
+        // A tabela aplica os filtros escolhidos no modal.
+        let pecasFiltradas = [...pecas];
+
+        if (filtroEstadoStockPecas === 'ativas') {
+            pecasFiltradas = pecasFiltradas.filter(peca => {
+                const stock = Number(peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+                return stock > 0;
+            });
+        }
+
+        if (filtroEstadoStockPecas === 'inativas') {
+            pecasFiltradas = pecasFiltradas.filter(peca => {
+                const stock = Number(peca.stockDisponivel ?? peca.StockDisponivel ?? 0);
+                return stock === 0;
+            });
+        }
+
+        if (ordenacaoPrecoPecas === 'crescente') {
+            pecasFiltradas.sort((a, b) => {
+                const precoA = Number(a.precoUnitario ?? a.PrecoUnitario ?? 0);
+                const precoB = Number(b.precoUnitario ?? b.PrecoUnitario ?? 0);
+                return precoA - precoB;
+            });
+        }
+
+        if (ordenacaoPrecoPecas === 'decrescente') {
+            pecasFiltradas.sort((a, b) => {
+                const precoA = Number(a.precoUnitario ?? a.PrecoUnitario ?? 0);
+                const precoB = Number(b.precoUnitario ?? b.PrecoUnitario ?? 0);
+                return precoB - precoA;
+            });
+        }
+
+        totalPaginasPecas = Math.max(
+            1,
+            Math.ceil(pecasFiltradas.length / pecasPorPagina)
+        );
+
+        // Evita ficar numa página inexistente depois de eliminar uma peça.
+        if (paginaAtualPecas > totalPaginasPecas) {
+            paginaAtualPecas = totalPaginasPecas;
+        }
+
+        const inicio = (paginaAtualPecas - 1) * pecasPorPagina;
+
+        const pecasDaPagina = pecasFiltradas.slice(
+            inicio,
+            inicio + pecasPorPagina
+        );
+
+        atualizarPaginacaoPecas();
+
+        if (pecasDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaPecas',
-                7,
+                8,
                 'Não existem peças registadas com os filtros selecionados.'
             );
             return;
         }
 
-        tabela.innerHTML = pecas.map(peca => {
+        tabela.innerHTML = pecasDaPagina.map(peca => {
             const id = peca.id ?? peca.Id;
             const referencia = escaparHtml(peca.referenciaPeca ?? peca.ReferenciaPeca ?? '-');
             const nome = escaparHtml(peca.nome ?? peca.Nome ?? '-');
@@ -379,30 +617,30 @@ async function carregarPecas() {
             const compatibilidade = escaparHtml(peca.compatibilidade ?? peca.Compatibilidade ?? 'Geral');
             const preco = Number(peca.precoUnitario ?? peca.PrecoUnitario ?? 0).toFixed(2);
             const stock = peca.stockDisponivel ?? peca.StockDisponivel ?? 0;
-            const ativo = peca.ativo ?? peca.Ativo ?? true;
+            const emStock = Number(stock) > 0;
 
             return `
                 <tr>
-                    <td>${referencia}</td>
+                    <td><strong>${referencia}</strong></td>
                     <td>${nome}</td>
                     <td>${categoria}</td>
                     <td>${compatibilidade}</td>
                     <td><strong>${preco} €</strong></td>
                     <td>${stock}</td>
                     <td>
-                        <span class="badge ${ativo ? 'concluida' : 'pendente'}">
-                            ${ativo ? 'Ativa' : 'Inativa'}
+                        <span class="badge ${emStock ? 'concluida' : 'pendente'}">
+                            ${emStock ? 'Ativa' : 'Inativa'}
                         </span>
                     </td>
                     <td>
-                        <button class="btn-action btn-edit" onclick="abrirModalEditarPeca('${id}')" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
+                        <button class="btn-action btn-edit"
+                                onclick="abrirModalEditarPeca('${id}')">
+                            <i class="fa-solid fa-pen"></i> Editar
                         </button>
-                        <button class="btn-action ${ativo ? 'btn-warning' : 'btn-success'}" onclick="alternarInativarPeca('${id}', ${ativo})" title="${ativo ? 'Inativar' : 'Ativar'}">
-                            <i class="fa-solid ${ativo ? 'fa-ban' : 'fa-check'}"></i>
-                        </button>
-                        <button class="btn-action btn-delete" onclick="eliminarPeca('${id}')" title="Eliminar">
-                            <i class="fa-solid fa-trash"></i>
+
+                        <button class="btn-action btn-delete"
+                                onclick="eliminarPeca('${id}')">
+                            <i class="fa-solid fa-trash"></i> Eliminar
                         </button>
                     </td>
                 </tr>
@@ -422,6 +660,7 @@ async function carregarPecas() {
 }
 
 function aplicarFiltrosPecas() {
+    paginaAtualPecas = 1;
     carregarPecas();
 }
 
@@ -429,6 +668,8 @@ function limparFiltrosPecas() {
     if (document.getElementById('filtroPecaPesquisa')) document.getElementById('filtroPecaPesquisa').value = '';
     if (document.getElementById('filtroPecaCategoria')) document.getElementById('filtroPecaCategoria').value = '';
     if (document.getElementById('filtroPecaEstado')) document.getElementById('filtroPecaEstado').value = '';
+
+    paginaAtualPecas = 1;
     carregarPecas();
 }
 
@@ -634,6 +875,33 @@ function preencherSelectsPecas() {
     });
 }
 
+// Paginação dos veículos: cinco por página.
+const veiculosPorPagina = 5;
+let paginaAtualVeiculos = 1;
+let totalPaginasVeiculos = 1;
+
+function mudarPaginaVeiculos(direcao) {
+    const novaPagina = paginaAtualVeiculos + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasVeiculos) {
+        return;
+    }
+
+    paginaAtualVeiculos = novaPagina;
+    carregarVeiculos();
+}
+
+function atualizarPaginacaoVeiculos() {
+    document.getElementById('infoPaginaVeiculos').textContent =
+        `Página ${paginaAtualVeiculos} de ${totalPaginasVeiculos}`;
+
+    document.getElementById('btnPaginaAnteriorVeiculos').disabled =
+        paginaAtualVeiculos === 1;
+
+    document.getElementById('btnPaginaSeguinteVeiculos').disabled =
+        paginaAtualVeiculos === totalPaginasVeiculos;
+}
+
 async function carregarVeiculos() {
     const tabela = document.getElementById('tabelaVeiculos');
     if (!tabela) return;
@@ -651,16 +919,40 @@ async function carregarVeiculos() {
 
         const veiculos = await response.json();
 
-        if (veiculos.length === 0) {
+        const totalVeiculosEl = document.getElementById('totalVeiculos');
+
+        if (totalVeiculosEl) {
+            totalVeiculosEl.textContent = veiculos.length;
+        }
+
+        totalPaginasVeiculos = Math.max(
+            1,
+            Math.ceil(veiculos.length / veiculosPorPagina)
+        );
+
+        if (paginaAtualVeiculos > totalPaginasVeiculos) {
+            paginaAtualVeiculos = totalPaginasVeiculos;
+        }
+
+        const inicio = (paginaAtualVeiculos - 1) * veiculosPorPagina;
+
+        const veiculosDaPagina = veiculos.slice(
+            inicio,
+            inicio + veiculosPorPagina
+        );
+
+        atualizarPaginacaoVeiculos();
+
+        if (veiculosDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaVeiculos',
-                6,
+                7,
                 'Não existem veículos registados.'
             );
             return;
         }
 
-        tabela.innerHTML = veiculos.map(veiculo => `
+        tabela.innerHTML = veiculosDaPagina.map(veiculo => `
             <tr>
                 <td><strong>#${veiculo.id}</strong></td>
                 <td>${escaparHtml(veiculo.matricula)}</td>
@@ -683,6 +975,13 @@ async function carregarVeiculos() {
         `).join('');
     } catch (error) {
         console.error(error);
+
+        const totalVeiculosEl = document.getElementById('totalVeiculos');
+
+        if (totalVeiculosEl) {
+            totalVeiculosEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaVeiculos',
             6,
@@ -708,42 +1007,6 @@ function mudarPaginaClientes(direcao) {
     carregarClientes();
 }
 
-//async function carregarClientes() {
-//    try {
-//        const response = await fetch('https://localhost:7194/api/Auth/users', {
-//            credentials: 'include'
-//        });
-
-//        if (!response.ok) throw new Error('Erro ao carregar utilizadores');
-
-//        const utilizadores = await response.json();
-
-//        // Filtra e guarda na variável global
-//        clientesCarregados = utilizadores.filter(u => u.role && u.role.toLowerCase() === 'cliente');
-
-//        const tabelaClientes = document.getElementById('tabelaClientesBody');
-//        tabelaClientes.innerHTML = clientesCarregados.map(cliente => `
-//            <tr>
-//                <td class="user-id">${escaparHtml(cliente.id)}</td>
-//                <td>${escaparHtml(cliente.firstName)}</td>
-//                <td>${escaparHtml(cliente.email)}</td>
-//                <td>${escaparHtml(cliente.role)}</td>
-//                <td>
-//                    <button class="btn-action btn-edit" onclick="abrirModalEditarCliente('${cliente.id}')">
-//                        <i class="fa-solid fa-pen"></i> Editar
-//                    </button>
-//                    <button class="btn-action btn-delete" onclick="eliminarCliente('${cliente.id}')">
-//                        <i class="fa-solid fa-trash"></i> Eliminar
-//                    </button>
-//                </td>
-//            </tr>
-//        `).join('');
-
-//    } catch (error) {
-//        console.error("Erro ao carregar clientes:", error);
-//    }
-//}
-
 async function carregarClientes() {
     const tabelaClientes = document.getElementById('tabelaClientesBody');
 
@@ -768,6 +1031,12 @@ async function carregarClientes() {
         clientesCarregados = utilizadores.filter(
             utilizador => utilizador.role?.toLowerCase() === 'cliente'
         );
+
+        const totalClientesEl = document.getElementById('totalClientes');
+
+        if (totalClientesEl) {
+            totalClientesEl.textContent = clientesCarregados.length;
+        }
 
         totalPaginasClientes = Math.max(
             1,
@@ -839,9 +1108,40 @@ document.addEventListener('DOMContentLoaded', carregarClientes);
 
 let adminsCarregados = [];
 
+// Paginação dos administradores: cinco por página.
+const adminsPorPagina = 5;
+let paginaAtualAdmins = 1;
+let totalPaginasAdmins = 1;
+
+function mudarPaginaAdmins(direcao) {
+    const novaPagina = paginaAtualAdmins + direcao;
+
+    if (novaPagina < 1 || novaPagina > totalPaginasAdmins) {
+        return;
+    }
+
+    paginaAtualAdmins = novaPagina;
+    carregarAdmins();
+}
+
+function atualizarPaginacaoAdmins() {
+    document.getElementById('infoPaginaAdmins').textContent =
+        `Página ${paginaAtualAdmins} de ${totalPaginasAdmins}`;
+
+    document.getElementById('btnPaginaAnteriorAdmins').disabled =
+        paginaAtualAdmins === 1;
+
+    document.getElementById('btnPaginaSeguinteAdmins').disabled =
+        paginaAtualAdmins === totalPaginasAdmins;
+}
+
 async function carregarAdmins() {
     const tabela = document.getElementById('tabelaAdmins');
-    if (!tabela) return;
+
+    if (!tabela) {
+        return;
+    }
+
     tabela.innerHTML = '';
 
     try {
@@ -860,7 +1160,31 @@ async function carregarAdmins() {
         const admins = await response.json();
         adminsCarregados = admins;
 
-        if (admins.length === 0) {
+        const totalAdminsEl = document.getElementById('totalAdmins');
+
+        if (totalAdminsEl) {
+            totalAdminsEl.textContent = admins.length;
+        }
+
+        totalPaginasAdmins = Math.max(
+            1,
+            Math.ceil(admins.length / adminsPorPagina)
+        );
+
+        if (paginaAtualAdmins > totalPaginasAdmins) {
+            paginaAtualAdmins = totalPaginasAdmins;
+        }
+
+        const inicio = (paginaAtualAdmins - 1) * adminsPorPagina;
+
+        const adminsDaPagina = admins.slice(
+            inicio,
+            inicio + adminsPorPagina
+        );
+
+        atualizarPaginacaoAdmins();
+
+        if (adminsDaPagina.length === 0) {
             mostrarTabelaVazia(
                 'tabelaAdmins',
                 5,
@@ -869,17 +1193,19 @@ async function carregarAdmins() {
             return;
         }
 
-        tabela.innerHTML = admins.map(admin => `
+        tabela.innerHTML = adminsDaPagina.map(admin => `
             <tr>
                 <td class="user-id">${escaparHtml(admin.id)}</td>
                 <td>${escaparHtml(admin.firstName)}</td>
                 <td>${escaparHtml(admin.email)}</td>
                 <td>${escaparHtml(admin.role)}</td>
+
                 <td>
                     <button class="btn-action btn-edit"
                             onclick="abrirModalEditarAdmin('${admin.id}')">
                         <i class="fa-solid fa-pen"></i> Editar
                     </button>
+
                     <button class="btn-action btn-delete"
                             onclick="eliminarAdmin('${admin.id}')">
                         <i class="fa-solid fa-trash"></i> Eliminar
@@ -887,8 +1213,16 @@ async function carregarAdmins() {
                 </td>
             </tr>
         `).join('');
+
     } catch (error) {
         console.error(error);
+
+        const totalAdminsEl = document.getElementById('totalAdmins');
+
+        if (totalAdminsEl) {
+            totalAdminsEl.textContent = '0';
+        }
+
         mostrarTabelaVazia(
             'tabelaAdmins',
             5,
@@ -939,6 +1273,32 @@ function limparFiltroVeiculo() {
     paginaAtualOrdens = 1;
     paginaAtualHistorico = 1;
     carregarDadosDashboard();
+}
+
+function atualizarGraficoOrdens(total, emCurso, concluidas) {
+    const percentagemConcluidas = total > 0
+        ? (concluidas / total) * 100
+        : 0;
+
+    document.getElementById('dashTotalOrdens').textContent = total;
+    document.getElementById('dashEmCurso').textContent = emCurso;
+    document.getElementById('dashConcluidas').textContent = concluidas;
+
+    document.getElementById('graficoOrdens')
+        .style.setProperty('--percent', `${percentagemConcluidas}%`);
+}
+
+function atualizarGraficoPecas(total, emStock, foraStock) {
+    const percentagemEmStock = total > 0
+        ? (emStock / total) * 100
+        : 0;
+
+    document.getElementById('dashTotalPecas').textContent = total;
+    document.getElementById('dashPecasEmStock').textContent = emStock;
+    document.getElementById('dashPecasForaStock').textContent = foraStock;
+
+    document.getElementById('graficoPecas')
+        .style.setProperty('--percent', `${percentagemEmStock}%`);
 }
 
 async function carregarDadosDashboard() {
@@ -1082,6 +1442,12 @@ async function carregarDadosDashboard() {
             if (document.getElementById('concluidas')) document.getElementById('concluidas').textContent = totalConcluidas;
             if (document.getElementById('emCurso')) document.getElementById('emCurso').textContent = totalEmCurso;
             if (document.getElementById('totalOrdens')) document.getElementById('totalOrdens').textContent = totalGeralOrdens;
+
+            atualizarGraficoOrdens(
+                totalGeralOrdens,
+                totalEmCurso,
+                totalConcluidas
+            );
         }
 
     } catch (error) {
@@ -2021,3 +2387,125 @@ async function eliminarVeiculo(id) {
         alert(error.message);
     }
 }
+
+// Carrega apenas os valores necessários para o gráfico de peças no Dashboard.
+async function carregarResumoPecasDashboard() {
+    try {
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(
+            'https://localhost:7039/api/pecas/admin/todas',
+            {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar o resumo das peças.');
+        }
+
+        const data = await response.json();
+
+        const pecas = Array.isArray(data)
+            ? data
+            : (data.value || data.itens || []);
+
+        // Atualiza os cartões normais e também o gráfico circular.
+        atualizarResumoPecas(pecas);
+
+    } catch (error) {
+        console.error('Erro ao carregar gráfico das peças:', error);
+    }
+}
+
+// Carrega os valores dos cartões pequenos do Dashboard.
+async function carregarResumoCartoesDashboard() {
+    const token = localStorage.getItem('token');
+
+    const opcoes = {
+        credentials: 'include',
+        headers: token
+            ? { 'Authorization': `Bearer ${token}` }
+            : {}
+    };
+
+    // Converte respostas normais, OData ou listas internas numa lista.
+    const obterLista = async (url) => {
+        const response = await fetch(url, opcoes);
+
+        if (!response.ok) {
+            throw new Error(`Erro ao obter dados de ${url}`);
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data)
+            ? data
+            : (data.value || data.itens || []);
+    };
+
+    try {
+        // Mesmo que uma API falhe, as restantes continuam a atualizar.
+        const resultados = await Promise.allSettled([
+            obterLista('https://localhost:7085/api/Veiculos'),
+            obterLista('https://localhost:7194/api/Auth/users'),
+            obterLista('/api/pedidos/pendentes'),
+            obterLista('https://localhost:7194/api/Auth/admins')
+        ]);
+
+        const veiculos = resultados[0].status === 'fulfilled'
+            ? resultados[0].value
+            : [];
+
+        const utilizadores = resultados[1].status === 'fulfilled'
+            ? resultados[1].value
+            : [];
+
+        const pedidos = resultados[2].status === 'fulfilled'
+            ? resultados[2].value
+            : [];
+
+        const admins = resultados[3].status === 'fulfilled'
+            ? resultados[3].value
+            : [];
+
+        // Aceita role/Role/roles/Rules e nomes diferentes para Administrador.
+        const temPerfil = (utilizador, perfisPermitidos) => {
+            const perfis = utilizador.roles
+                ?? utilizador.Roles
+                ?? utilizador.role
+                ?? utilizador.Role
+                ?? [];
+
+            const listaPerfis = Array.isArray(perfis) ? perfis : [perfis];
+
+            return listaPerfis.some(perfil =>
+                perfisPermitidos.includes(String(perfil).toLowerCase())
+            );
+        };
+
+        const clientes = utilizadores.filter(utilizador =>
+            temPerfil(utilizador, ['cliente'])
+        );
+
+        document.getElementById('dashTotalVeiculos').textContent = veiculos.length;
+        document.getElementById('dashTotalClientes').textContent = clientes.length;
+        document.getElementById('dashTotalAdmins').textContent = admins.length;
+        document.getElementById('dashPedidosPendentes').textContent = pedidos.length;
+
+    } catch (error) {
+        console.error('Erro ao carregar cartões do Dashboard:', error);
+    }
+}
+
+// Ao abrir o site, mostra apenas o Dashboard e carrega os seus dados.
+document.addEventListener('DOMContentLoaded', () => {
+    mostrarSecao('dashboard');
+
+    carregarResumoPecasDashboard();
+    carregarResumoCartoesDashboard();
+});
