@@ -1,11 +1,7 @@
 using Identity.API.DTOs;
 using Identity.API.Services;
-using Indentity.API.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Data;
 
 namespace Identity.API.Controllers
 {
@@ -18,15 +14,10 @@ namespace Identity.API.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ITokenService _tokenService;
 
-        public AuthController(
-            UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            ITokenService tokenService)
-        {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _tokenService = tokenService;
-        }
+    public AuthController(IAuthService authService)
+    {
+        _authService = authService;
+    }
 
         /// <summary>Regista uma nova conta de cliente.</summary>
         /// <param name="dto">Dados de registo da conta.</param>

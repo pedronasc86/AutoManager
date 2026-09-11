@@ -1,11 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WorkShop.API.Data;
 using WorkShop.API.DTOs;
-using WorkShop.API.Models;
-using WorkShop.API.Services;
-using WorkShop.API.Services.Auth;
+using WorkShop.API.Services.Ordens;
 
 namespace WorkShop.API.Controllers
 {
@@ -19,14 +15,10 @@ namespace WorkShop.API.Controllers
         private readonly CatalogoPecasService _catalogoPecasService;
         private readonly IUserContextService _userContextService;
 
-        public OrdensReparacaoController(WorkshopContext contexto, 
-            CatalogoPecasService catalogoPecasService, 
-            IUserContextService userContextService)
-        {
-            _contexto = contexto;
-            _catalogoPecasService = catalogoPecasService;
-            _userContextService = userContextService;
-        }
+    public OrdensReparacaoController(IOrdensReparacaoService ordensService)
+    {
+        _ordensService = ordensService;
+    }
 
         /// <summary>Lista ordens de reparação de forma paginada e permite filtrar por veículo.</summary>
         [HttpGet]

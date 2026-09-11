@@ -53,6 +53,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // 4. INJEÇÃO DE DEPENDÊNCIAS DOS TEUS SERVIÇOS
 // =========================================================================
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
 
 // =========================================================================
 // 5. CONFIGURAÇÃO DO JWT BEARER (AUTENTICAÇÃO)

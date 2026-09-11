@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using WorkShop.API.DTOs;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace WorkShop.API.Services
 {
@@ -28,22 +29,38 @@ namespace WorkShop.API.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        private void AdicionarTokenCabecalho()
+        // Método auxiliar para criar um HttpRequestMessage com o token do utilizador atual de forma isolada
+        private HttpRequestMessage CriarMensagemComToken(HttpMethod metodo, string url, HttpContent? content = null)
         {
+            var request = new HttpRequestMessage(metodo, url);
+
+            if (content != null)
+            {
+                request.Content = content;
+            }
+
             var token = _httpContextAccessor.HttpContext?.Request.Cookies["jwtToken"];
             if (!string.IsNullOrEmpty(token))
             {
-                _httpClient.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
+
+            return request;
         }
 
         public async Task<List<RespostaPecaCatalogoDto>> ObterPecasAsync()
         {
             try
             {
-                AdicionarTokenCabecalho();
-                return await _httpClient.GetFromJsonAsync<List<RespostaPecaCatalogoDto>>("api/pecas")
+                var request = CriarMensagemComToken(HttpMethod.Get, "api/pecas");
+                var response = await _httpClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new List<RespostaPecaCatalogoDto>();
+                }
+
+                return await response.Content.ReadFromJsonAsync<List<RespostaPecaCatalogoDto>>()
                     ?? new List<RespostaPecaCatalogoDto>();
             }
             catch (Exception ex)
@@ -56,9 +73,8 @@ namespace WorkShop.API.Services
         }
 
         public async Task<(bool TemStock, decimal PrecoUnitario, string MensagemErro)>
-    VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
+            VerificarStockEObterPrecoAsync(string pecaId, int quantidadeDesejada)
         {
-            // Validação antes de chamar a API externa.
             if (!Guid.TryParse(pecaId, out _))
             {
                 return (false, 0, "O ID da peça não é válido.");
@@ -71,9 +87,8 @@ namespace WorkShop.API.Services
 
             try
             {
-                AdicionarTokenCabecalho();
-                var disponibilidadeResponse = await _httpClient.GetAsync(
-                    $"api/pecas/{pecaId}/disponibilidade?quantidade={quantidadeDesejada}");
+                var requestDisponibilidade = CriarMensagemComToken(HttpMethod.Get, $"api/pecas/{pecaId}/disponibilidade?quantidade={quantidadeDesejada}");
+                var disponibilidadeResponse = await _httpClient.SendAsync(requestDisponibilidade);
 
                 if (!disponibilidadeResponse.IsSuccessStatusCode)
                 {
@@ -90,8 +105,8 @@ namespace WorkShop.API.Services
                         "Não existe stock suficiente para a peça pedida.");
                 }
 
-                AdicionarTokenCabecalho();
-                var pecaResponse = await _httpClient.GetAsync($"api/pecas/{pecaId}");
+                var requestPeca = CriarMensagemComToken(HttpMethod.Get, $"api/pecas/{pecaId}");
+                var pecaResponse = await _httpClient.SendAsync(requestPeca);
 
                 if (!pecaResponse.IsSuccessStatusCode)
                 {
@@ -133,8 +148,8 @@ namespace WorkShop.API.Services
         {
             try
             {
-                AdicionarTokenCabecalho();
-                var response = await _httpClient.GetAsync("api/pecas/admin/todas");
+                var request = CriarMensagemComToken(HttpMethod.Get, "api/pecas/admin/todas");
+                var response = await _httpClient.SendAsync(request);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -156,8 +171,9 @@ namespace WorkShop.API.Services
 
             try
             {
-                AdicionarTokenCabecalho();
-                var responseGet = await _httpClient.GetAsync($"api/pecas/{pecaId}");
+                var requestGet = CriarMensagemComToken(HttpMethod.Get, $"api/pecas/{pecaId}");
+                var responseGet = await _httpClient.SendAsync(requestGet);
+
                 if (!responseGet.IsSuccessStatusCode)
                 {
                     var erroGet = await responseGet.Content.ReadAsStringAsync();
@@ -182,8 +198,10 @@ namespace WorkShop.API.Services
                     ativo = peca.Ativo
                 };
 
-                AdicionarTokenCabecalho();
-                var responsePut = await _httpClient.PutAsJsonAsync($"api/pecas/{pecaId}", payloadAtualizacao);
+                var content = JsonContent.Create(payloadAtualizacao);
+                var requestPut = CriarMensagemComToken(HttpMethod.Put, $"api/pecas/{pecaId}", content);
+                var responsePut = await _httpClient.SendAsync(requestPut);
+
                 if (!responsePut.IsSuccessStatusCode)
                 {
                     var erroPut = await responsePut.Content.ReadAsStringAsync();
