@@ -4,6 +4,9 @@ using WorkShop.API.Services;
 
 namespace WorkShop.API.Controllers
 {
+    /// <summary>
+    /// Expõe o catálogo de peças da API externa à aplicação da oficina.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -16,7 +19,14 @@ namespace WorkShop.API.Controllers
             _catalogoPecasService = catalogoPecasService;
         }
 
+        /// <summary>
+        /// Obtém as peças atualmente disponíveis no catálogo externo.
+        /// </summary>
+        /// <returns>Uma coleção de peças disponíveis.</returns>
         [HttpGet("pecas")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ObterPecas()
         {
             try

@@ -9,6 +9,7 @@ using System.Data;
 
 namespace Identity.API.Controllers
 {
+    /// <summary>Gere o registo, autenticação e administração das contas de utilizador.</summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
@@ -27,10 +28,11 @@ namespace Identity.API.Controllers
             _tokenService = tokenService;
         }
 
-        // =========================================================================
-        // REGISTO PÚBLICO: cria sempre contas Cliente
-        // =========================================================================
+        /// <summary>Regista uma nova conta de cliente.</summary>
+        /// <param name="dto">Dados de registo da conta.</param>
         [HttpPost("register")]
+        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
             if (!ModelState.IsValid)
@@ -85,10 +87,12 @@ namespace Identity.API.Controllers
             });
         }
 
-        // =========================================================================
-        // LOGIN
-        // =========================================================================
+        /// <summary>Autentica um utilizador e devolve um token de acesso.</summary>
+        /// <param name="dto">Credenciais de autenticação.</param>
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             if (!ModelState.IsValid)
@@ -138,11 +142,11 @@ namespace Identity.API.Controllers
             });
         }
 
-        // =========================================================================
-        // UTILIZADOR ATUAL
-        // =========================================================================
+        /// <summary>Obtém os dados do utilizador autenticado.</summary>
         [Authorize]
         [HttpGet("me")]
+        [ProducesResponseType(typeof(CurrentUserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetCurrentUser()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -161,11 +165,12 @@ namespace Identity.API.Controllers
             });
         }
 
-        // =========================================================================
-        // LISTAR UTILIZADORES
-        // =========================================================================
+        /// <summary>Lista todas as contas com o perfil de cliente.</summary>
         [Authorize(Roles = "Admin,admin")]
         [HttpGet("users")]
+        [ProducesResponseType(typeof(IEnumerable<UserListItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _userManager.Users.ToListAsync();
@@ -191,11 +196,14 @@ namespace Identity.API.Controllers
             return Ok(userList);
         }
 
-        // =========================================================================
-        // ADMIN CRIA UTILIZADORES COM QUALQUER ROLE PERMITIDA
-        // =========================================================================
+        /// <summary>Cria uma conta com um dos perfis permitidos para um administrador.</summary>
+        /// <param name="dto">Dados da conta e perfil a criar.</param>
         [Authorize(Roles = "Admin")]
         [HttpPost("admin/criar-utilizador")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CriarUtilizadorPorAdmin(
             [FromBody] RegisterDto dto)
         {
@@ -256,11 +264,12 @@ namespace Identity.API.Controllers
             });
         }
 
-        // =========================================================================
-        // GESTÃO DE ADMINISTRADORES
-        // =========================================================================
+        /// <summary>Lista as contas que têm o perfil de administrador.</summary>
         [Authorize(Roles = "Admin,admin")]
         [HttpGet("admins")]
+        [ProducesResponseType(typeof(IEnumerable<UserListItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetAdmins()
         {
             var admins = await _userManager.GetUsersInRoleAsync("Admin");
@@ -282,8 +291,14 @@ namespace Identity.API.Controllers
             return Ok(response);
         }
 
+        /// <summary>Cria uma nova conta de administrador.</summary>
+        /// <param name="dto">Dados da conta de administrador a criar.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpPost("admins")]
+        [ProducesResponseType(typeof(UserListItemDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateAdmin([FromBody] CriarAdminDto dto)
         {
             if (!ModelState.IsValid)
@@ -364,8 +379,16 @@ namespace Identity.API.Controllers
             });
         }
 
+        /// <summary>Atualiza os dados de uma conta de administrador.</summary>
+        /// <param name="id">Identificador da conta de administrador.</param>
+        /// <param name="dto">Novos dados da conta.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpPut("admins/{id}")]
+        [ProducesResponseType(typeof(UserListItemDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateAdmin(
             string id,
             [FromBody] AtualizarAdminDto dto)
@@ -448,8 +471,15 @@ namespace Identity.API.Controllers
             });
         }
 
+        /// <summary>Elimina uma conta de administrador, exceto a própria ou o último administrador.</summary>
+        /// <param name="id">Identificador da conta de administrador.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpDelete("admins/{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAdmin(string id)
         {
             var currentUserId = _userManager.GetUserId(User);
@@ -498,8 +528,14 @@ namespace Identity.API.Controllers
 
             return NoContent();
         }
+        /// <summary>Atualiza os dados de uma conta de utilizador.</summary>
+        /// <param name="id">Identificador da conta de utilizador.</param>
+        /// <param name="dto">Novos dados da conta.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpPut("users/{id}")]
+        [ProducesResponseType(typeof(UserListItemDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateUser(string id, [FromBody] AtualizarAdminDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -539,8 +575,13 @@ namespace Identity.API.Controllers
             });
         }
 
+        /// <summary>Elimina uma conta de utilizador.</summary>
+        /// <param name="id">Identificador da conta de utilizador.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpDelete("users/{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUser(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -554,8 +595,12 @@ namespace Identity.API.Controllers
 
             return NoContent();
         }
+        /// <summary>Cria uma conta de utilizador e atribui-lhe o perfil indicado.</summary>
+        /// <param name="dto">Dados da conta a criar.</param>
         [Authorize(Roles = "Admin,admin")]
         [HttpPost("users")]
+        [ProducesResponseType(typeof(UserListItemDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateUser([FromBody] RegisterDto dto)
         {
             if (!ModelState.IsValid)

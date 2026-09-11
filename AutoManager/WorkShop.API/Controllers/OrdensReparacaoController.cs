@@ -9,6 +9,7 @@ using WorkShop.API.Services.Auth;
 
 namespace WorkShop.API.Controllers
 {
+    /// <summary>Gere as ordens de reparação registadas pela oficina.</summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize] // Exige JWT Token para todas as rotas
@@ -27,8 +28,11 @@ namespace WorkShop.API.Controllers
             _userContextService = userContextService;
         }
 
-        // 1. GET: api/OrdensReparacao (Para a tabela principal do Dashboard)
+        /// <summary>Lista ordens de reparação de forma paginada e permite filtrar por veículo.</summary>
         [HttpGet]
+        [ProducesResponseType(typeof(RespostaPaginadaOrdensDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ObterTodas(
             [FromQuery] int pagina = 1,
             [FromQuery] int tamanhoPagina = 5,
@@ -86,10 +90,13 @@ namespace WorkShop.API.Controllers
             });
         }
 
-        // 2. POST: api/OrdensReparacao (Compatível com /repair-order do enunciado RF8)
+        /// <summary>Cria uma ordem de reparação e valida o stock das peças aplicadas.</summary>
         [HttpPost]
         [HttpPost("repair-order")]
         [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
+        [ProducesResponseType(typeof(DetalheOrdemReparacaoDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CriarOrdem([FromBody] CriarOrdemReparacaoDto dto)
         {
             // Validar veículo
@@ -170,8 +177,10 @@ namespace WorkShop.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id = ordem.Id }, MapearParaDetalheDto(ordem));
         }
 
-        // 3. GET: api/OrdensReparacao/{id}
+        /// <summary>Obtém o detalhe de uma ordem de reparação, incluindo as peças aplicadas.</summary>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(DetalheOrdemReparacaoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ObterPorId(int id)
         {
             var ordem = await _contexto.OrdensReparacao
@@ -186,9 +195,13 @@ namespace WorkShop.API.Controllers
             return Ok(MapearParaDetalheDto(ordem));
         }
 
-        // 4. PUT: api/OrdensReparacao/{id}
+        /// <summary>Atualiza o estado, a descrição ou os custos de uma ordem de reparação.</summary>
         [HttpPut("{id}")]
         [Authorize(Roles = "Mecanico,mecanico,Admin,admin")]
+        [ProducesResponseType(typeof(RespostaOrdemReparacaoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> AtualizarOrdem(int id, [FromBody] AtualizarOrdemReparacaoDto dto)
         {
             var ordem = await _contexto.OrdensReparacao.FindAsync(id);
@@ -232,8 +245,9 @@ namespace WorkShop.API.Controllers
             return Ok(MapearParaRespostaDto(ordem));
         }
 
-        // 5. GET: api/OrdensReparacao/veiculo/{veiculoId}
+        /// <summary>Lista o histórico de reparações de um veículo.</summary>
         [HttpGet("veiculo/{veiculoId}")]
+        [ProducesResponseType(typeof(IEnumerable<RespostaOrdemReparacaoDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ObterHistoricoPorVeiculo(int veiculoId)
         {
             var ordens = await _contexto.OrdensReparacao
@@ -244,8 +258,10 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // 6. GET: api/OrdensReparacao/cliente/{clienteId}
+        /// <summary>Lista o histórico de reparações pertencentes a um cliente.</summary>
         [HttpGet("cliente/{clienteId}")]
+        [ProducesResponseType(typeof(IEnumerable<RespostaOrdemReparacaoDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> ObterHistoricoPorCliente(string clienteId)
         {
             var utilizadorAutenticadoId = _userContextService.GetCurrentUserId();
@@ -268,8 +284,10 @@ namespace WorkShop.API.Controllers
             return Ok(ordens.Select(MapearParaRespostaDto));
         }
 
-        // 7. DELETE: api/OrdensReparacao/{id}
+        /// <summary>Elimina uma ordem de reparação.</summary>
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ApagarOrdem(int id)
         {
             var ordem = await _contexto.OrdensReparacao.FindAsync(id);
@@ -321,8 +339,9 @@ namespace WorkShop.API.Controllers
             };
         }
 
-        // GET: api/OrdensReparacao/todas
+        /// <summary>Lista todas as ordens de reparação sem paginação.</summary>
         [HttpGet("todas")]
+        [ProducesResponseType(typeof(IEnumerable<RespostaOrdemReparacaoDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ObterTodasSemPaginacao()
         {
             var ordens = await _contexto.OrdensReparacao

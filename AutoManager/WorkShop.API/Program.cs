@@ -28,7 +28,18 @@ namespace WorkShop.API
             // 2. Controladores e Swagger
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                var xmlPath = Path.Combine(
+                    AppContext.BaseDirectory,
+                    $"{typeof(Program).Assembly.GetName().Name}.xml"
+                );
+
+                if (File.Exists(xmlPath))
+                {
+                    c.IncludeXmlComments(xmlPath);
+                }
+            });
 
             // 3. Serviços do Projeto
             builder.Services.AddHttpContextAccessor();
