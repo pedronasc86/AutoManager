@@ -48,8 +48,27 @@ namespace WorkShop.API.Controllers
         {
             try
             {
+                var matriculaLimpa = dto.Matricula?.Trim().ToUpper() ?? string.Empty;
+
+                if (string.IsNullOrEmpty(matriculaLimpa))
+                {
+                    return BadRequest(new { message = "A matrícula é obrigatória." });
+                }
+
+                var regexMatricula = new System.Text.RegularExpressions.Regex(@"^([A-Z]{2}-\d{2}-\d{2})|(\d{2}-[A-Z]{2}-\d{2})|(\d{2}-\d{2}-[A-Z]{2})|([A-Z]{2}-\d{2}-[A-Z]{2})$");
+                if (!regexMatricula.IsMatch(matriculaLimpa))
+                {
+                    return BadRequest(new { message = "Formato de matrícula inválido. Formatos aceites: 00-AA-00, AA-00-AA, 00-00-AA ou AA-00-00." });
+                }
+
+                int anoAtual = DateTime.Now.Year;
+                if (dto.Ano < 1900 || dto.Ano > anoAtual)
+                {
+                    return BadRequest(new { message = $"O ano do veículo tem de estar compreendido entre 1900 e {anoAtual}." });
+                }
+
                 var existeMatricula = await _contexto.Veiculos
-                    .AnyAsync(v => v.Matricula.ToLower() == dto.Matricula.ToLower());
+                    .AnyAsync(v => v.Matricula.ToUpper() == matriculaLimpa);
 
                 if (existeMatricula)
                 {
@@ -65,7 +84,7 @@ namespace WorkShop.API.Controllers
 
                 var veiculo = new Veiculo
                 {
-                    Matricula = dto.Matricula,
+                    Matricula = matriculaLimpa,
                     Marca = dto.Marca,
                     Modelo = dto.Modelo,
                     Ano = dto.Ano,
@@ -116,15 +135,27 @@ namespace WorkShop.API.Controllers
         {
             try
             {
-                var matriculaLimpa = dto.Matricula?.Trim() ?? string.Empty;
+                var matriculaLimpa = dto.Matricula?.Trim().ToUpper() ?? string.Empty;
 
                 if (string.IsNullOrEmpty(matriculaLimpa))
                 {
                     return BadRequest(new { message = "A matrícula é obrigatória." });
                 }
 
+                var regexMatricula = new System.Text.RegularExpressions.Regex(@"^([A-Z]{2}-\d{2}-\d{2})|(\d{2}-[A-Z]{2}-\d{2})|(\d{2}-\d{2}-[A-Z]{2})|([A-Z]{2}-\d{2}-[A-Z]{2})$");
+                if (!regexMatricula.IsMatch(matriculaLimpa))
+                {
+                    return BadRequest(new { message = "Formato de matrícula inválido. Formatos aceites: 00-AA-00, AA-00-AA, 00-00-AA ou AA-00-00." });
+                }
+
+                int anoAtual = DateTime.Now.Year;
+                if (dto.Ano < 1900 || dto.Ano > anoAtual)
+                {
+                    return BadRequest(new { message = $"O ano do veículo tem de estar compreendido entre 1900 e {anoAtual}." });
+                }
+
                 var existeMatriculaOutro = await _contexto.Veiculos
-                    .AnyAsync(v => v.Id != id && v.Matricula.Trim().ToLower() == matriculaLimpa.ToLower());
+                    .AnyAsync(v => v.Id != id && v.Matricula.ToUpper() == matriculaLimpa);
 
                 if (existeMatriculaOutro)
                 {
