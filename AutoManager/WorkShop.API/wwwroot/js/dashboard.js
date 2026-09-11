@@ -735,55 +735,80 @@ function fecharModalPeca() {
 
 async function guardarPeca(event) {
     event.preventDefault();
+    const getEl = (id) => document.getElementById(id);
+    const getVal = (id) => getEl(id)?.value.trim() ?? '';
 
-    const getVal = (idEl) => document.getElementById(idEl)?.value ?? '';
+    const ids = ['referenciaPeca', 'nomePeca', 'categoriaPeca', 'compatibilidadePeca', 'precoPeca', 'stockPeca'];
 
-    const idEdicao = getVal('pecaEdicaoId') || getVal('pecaEdicaoReferencia');
-    const referenciaPeca = getVal('referenciaPeca');
-    const nome = getVal('nomePeca');
-    const categoria = getVal('categoriaPeca');
-    const compatibilidade = getVal('compatibilidadePeca');
-    const precoUnitario = parseFloat(getVal('precoPeca')) || 0;
-    const stockDisponivel = parseInt(getVal('stockPeca')) || 0;
+    ids.forEach(id => {
+        const el = getEl(id);
+        if (el && !el.dataset.hasInputListener) {
+            el.dataset.hasInputListener = 'true';
+            el.addEventListener('input', () => el.setCustomValidity(''));
+        }
+    });
+
+    ids.forEach(id => getEl(id)?.setCustomValidity(''));
+
+    const elRef = getEl('referenciaPeca');
+    const elNome = getEl('nomePeca');
+    const elCat = getEl('categoriaPeca');
+    const elComp = getEl('compatibilidadePeca');
+    const elPreco = getEl('precoPeca');
+    const elStock = getEl('stockPeca');
+
+    const precoTexto = elPreco?.value.trim().replace(',', '.') ?? '';
 
     const dadosPeca = {
-        referenciaPeca,
-        nome,
-        categoria,
-        compatibilidade,
-        precoUnitario,
-        stockDisponivel
+        referenciaPeca: elRef?.value.trim() ?? '',
+        nome: elNome?.value.trim() ?? '',
+        categoria: elCat?.value.trim() ?? '',
+        compatibilidade: elComp?.value.trim() ?? '',
+        precoUnitario: parseFloat(precoTexto) || 0,
+        stockDisponivel: parseInt(elStock?.value) || 0
     };
 
-    const url = idEdicao
-        ? `https://localhost:7039/api/pecas/${idEdicao}`
-        : 'https://localhost:7039/api/pecas';
+    if (!dadosPeca.referenciaPeca) {
+        elRef.setCustomValidity('A referência é obrigatória.');
+        return elRef.reportValidity();
+    }
+    if (!dadosPeca.nome) {
+        elNome.setCustomValidity('O nome é obrigatório.');
+        return elNome.reportValidity();
+    }
+    if (!dadosPeca.categoria) {
+        elCat.setCustomValidity('A categoria é obrigatória.');
+        return elCat.reportValidity();
+    }
+    if (!dadosPeca.compatibilidade) {
+        elComp.setCustomValidity('A compatibilidade é obrigatória.');
+        return elComp.reportValidity();
+    }
+    if (dadosPeca.precoUnitario <= 0) {
+        elPreco.setCustomValidity('O preço tem de ser superior a 0.');
+        return elPreco.reportValidity();
+    }
+    if (dadosPeca.stockDisponivel < 0) {
+        elStock.setCustomValidity('O stock não pode ser negativo.');
+        return elStock.reportValidity();
+    }
 
-    const method = idEdicao ? 'PUT' : 'POST';
+    const idEdicao = getVal('pecaEdicaoId') || getVal('pecaEdicaoReferencia');
+    const url = idEdicao ? `https://localhost:7039/api/pecas/${idEdicao}` : 'https://localhost:7039/api/pecas';
 
     try {
         const token = localStorage.getItem('token');
-        //console.log('A enviar pedido:', { url, method, token, dadosPeca });
-
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
         const response = await fetch(url, {
-            method: method,
+            method: idEdicao ? 'PUT' : 'POST',
             credentials: 'include',
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            },
             body: JSON.stringify(dadosPeca)
         });
 
-        if (!response.ok) {
-            const erroTexto = await response.text();
-            throw new Error(erroTexto || 'Erro ao guardar a peça.');
-        }
+        if (!response.ok) throw new Error(await response.text() || 'Erro ao guardar a peça.');
 
         fecharModalPeca();
         carregarPecas();
@@ -1464,10 +1489,12 @@ function abrirModalCriarOrdemDePedido(pedidoId, clienteId, veiculoId, descricao)
     const inputVeiculo = document.getElementById('veiculoIdInput');
     const inputDescricao = document.getElementById('descricaoInput');
     const inputQtdPecas = document.getElementById('quantidadePecasInput');
+    const inputMaoDeObra = document.getElementById('custoMaoDeObraInput');
 
     if (inputCliente) inputCliente.value = clienteId;
     if (inputVeiculo) inputVeiculo.value = veiculoId;
     if (inputDescricao) inputDescricao.value = descricao;
+    if (inputMaoDeObra) inputMaoDeObra.value = '0.00';
 
     if (inputQtdPecas) inputQtdPecas.value = 0;
     gerarCamposPecas(0);
@@ -2174,9 +2201,6 @@ function abrirModalEditarCliente(id) {
     const btnSubmit = document.querySelector('#formCliente .btn-submit-modal');
     if (btnSubmit) btnSubmit.textContent = 'Atualizar Cliente';
 
-    // Limpa mensagens de erro anteriores se tiveres essa função
-    // limparMensagemCliente();
-
     // Mostra o modal com flex (para ficar centrado igual ao dos admins)
     document.getElementById('modalCliente').style.display = 'flex';
 }
@@ -2266,6 +2290,31 @@ async function eliminarCliente(id) {
 carregarDadosDashboard();
 carregarNomeUtilizador();
 
+// Método para configurar a máscara de formatação automática de hífens e limite de caracteres na matrícula
+function configurarMascaraMatricula() {
+    const inputMatricula = document.getElementById('matriculaVeiculo');
+    if (inputMatricula && !inputMatricula.dataset.hasMaskListener) {
+        inputMatricula.dataset.hasMaskListener = 'true';
+        inputMatricula.setAttribute('maxlength', '8');
+
+        inputMatricula.addEventListener('input', (e) => {
+            let valor = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (valor.length > 6) {
+                valor = valor.slice(0, 6);
+            }
+
+            let formatado = valor;
+            if (valor.length > 4) {
+                formatado = `${valor.slice(0, 2)}-${valor.slice(2, 4)}-${valor.slice(4, 6)}`;
+            } else if (valor.length > 2) {
+                formatado = `${valor.slice(0, 2)}-${valor.slice(2)}`;
+            }
+
+            e.target.value = formatado;
+        });
+    }
+}
+
 // Abre o modal de veículo, seguindo o mesmo padrão do modal de Peças.
 function abrirModalNovoVeiculo() {
     document.getElementById('tituloModalVeiculo').textContent =
@@ -2275,6 +2324,7 @@ function abrirModalNovoVeiculo() {
     document.getElementById('veiculoEdicaoId').value = '';
     document.getElementById('mensagemVeiculo').textContent = '';
 
+    configurarMascaraMatricula();
     document.getElementById('modalVeiculo').style.display = 'flex';
 }
 
@@ -2355,6 +2405,7 @@ async function abrirModalEditarVeiculo(id) {
         document.getElementById('tituloModalVeiculo').textContent =
             'Editar Veículo';
 
+        configurarMascaraMatricula();
         document.getElementById('modalVeiculo').style.display = 'flex';
 
     } catch (error) {
@@ -2508,4 +2559,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     carregarResumoPecasDashboard();
     carregarResumoCartoesDashboard();
+    configurarMascaraMatricula();
 });

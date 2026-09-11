@@ -38,14 +38,26 @@ public class OrdensReparacaoService : IOrdensReparacaoService
 
         return new(200, new RespostaPaginadaOrdensDto
         {
-            Itens = ordens.Select(MapearParaRespostaDto).ToList(), PaginaAtual = pagina,
-            TotalPaginas = totalPaginas, TotalItens = totalItens, TotalOrdens = totalOrdens,
-            TotalEmCurso = totalEmCurso, TotalConcluidas = totalConcluidas
+            Itens = ordens.Select(MapearParaRespostaDto).ToList(),
+            PaginaAtual = pagina,
+            TotalPaginas = totalPaginas,
+            TotalItens = totalItens,
+            TotalOrdens = totalOrdens,
+            TotalEmCurso = totalEmCurso,
+            TotalConcluidas = totalConcluidas
         });
     }
 
     public async Task<OrdemServiceResult> CriarAsync(CriarOrdemReparacaoDto dto)
     {
+        // Validação: Descrição do problema obrigatória
+        if (string.IsNullOrWhiteSpace(dto.DescricaoProblema))
+            return new(400, new { mensagem = "A descrição do problema é obrigatória." });
+
+        // Validação: Custo de mão de obra obrigatório e obrigatoriamente superior a zero
+        if (dto.CustoMaoDeObra <= 0)
+            return new(400, new { mensagem = "O custo de mão de obra deve ser superior a zero." });
+
         var veiculo = await _contexto.Veiculos.AsNoTracking().FirstOrDefaultAsync(v => v.Id == dto.VeiculoId);
         if (veiculo is null)
             return new(400, new { mensagem = $"Veículo com ID {dto.VeiculoId} não foi encontrado." });
@@ -54,8 +66,13 @@ public class OrdensReparacaoService : IOrdensReparacaoService
 
         decimal totalCustoPecas = 0;
         var pecasDaOrdem = new List<PecaAplicadaOrdem>();
+
+        // Peças são opcionais; se existirem, a quantidade de cada uma tem de ser maior que zero
         foreach (var itemPeca in dto.Pecas ?? [])
         {
+            if (itemPeca.Quantidade <= 0)
+                return new(400, new { mensagem = "A quantidade de cada peça adicionada deve ser maior do que zero." });
+
             var resultadoPeca = await _catalogoPecasService.VerificarStockEObterPrecoAsync(itemPeca.PecaId, itemPeca.Quantidade);
             if (!resultadoPeca.TemStock)
                 return new(400, new { mensagem = $"Falha na validação das peças: {resultadoPeca.MensagemErro}" });
@@ -63,17 +80,25 @@ public class OrdensReparacaoService : IOrdensReparacaoService
             totalCustoPecas += resultadoPeca.PrecoUnitario * itemPeca.Quantidade;
             pecasDaOrdem.Add(new PecaAplicadaOrdem
             {
-                PecaId = Guid.Parse(itemPeca.PecaId), Quantidade = itemPeca.Quantidade,
+                PecaId = Guid.Parse(itemPeca.PecaId),
+                Quantidade = itemPeca.Quantidade,
                 PrecoUnitario = resultadoPeca.PrecoUnitario
             });
         }
 
         var ordem = new OrdemReparacao
         {
-            DescricaoProblema = dto.DescricaoProblema, VeiculoId = dto.VeiculoId, ClienteId = dto.ClienteId,
-            DataEntrada = DateTime.UtcNow, DataConclusao = DateTime.UtcNow, Estado = "Concluída",
-            CustoMaoDeObra = dto.CustoMaoDeObra, CustoPecas = totalCustoPecas, Pecas = pecasDaOrdem
+            DescricaoProblema = dto.DescricaoProblema.Trim(),
+            VeiculoId = dto.VeiculoId,
+            ClienteId = dto.ClienteId,
+            DataEntrada = DateTime.UtcNow,
+            DataConclusao = DateTime.UtcNow,
+            Estado = "Concluída",
+            CustoMaoDeObra = dto.CustoMaoDeObra,
+            CustoPecas = totalCustoPecas,
+            Pecas = pecasDaOrdem
         };
+
         _contexto.OrdensReparacao.Add(ordem);
         await _contexto.SaveChangesAsync();
 
@@ -101,9 +126,28 @@ public class OrdensReparacaoService : IOrdensReparacaoService
             ordem.Estado = dto.Estado;
             ordem.DataConclusao = dto.Estado == "Concluída" ? DateTime.UtcNow : null;
         }
-        if (!string.IsNullOrWhiteSpace(dto.DescricaoProblema)) ordem.DescricaoProblema = dto.DescricaoProblema.Trim();
-        if (dto.CustoMaoDeObra.HasValue) ordem.CustoMaoDeObra = dto.CustoMaoDeObra.Value;
-        if (dto.CustoPecas.HasValue) ordem.CustoPecas = dto.CustoPecas.Value;
+
+        if (dto.DescricaoProblema is not null)
+        {
+            if (string.IsNullOrWhiteSpace(dto.DescricaoProblema))
+                return new(400, new { mensagem = "A descrição do problema não pode estar vazia." });
+            ordem.DescricaoProblema = dto.DescricaoProblema.Trim();
+        }
+
+        if (dto.CustoMaoDeObra.HasValue)
+        {
+            if (dto.CustoMaoDeObra.Value <= 0)
+                return new(400, new { mensagem = "O custo de mão de obra deve ser superior a zero." });
+            ordem.CustoMaoDeObra = dto.CustoMaoDeObra.Value;
+        }
+
+        if (dto.CustoPecas.HasValue)
+        {
+            if (dto.CustoPecas.Value < 0)
+                return new(400, new { mensagem = "O custo de peças não pode ser negativo." });
+            ordem.CustoPecas = dto.CustoPecas.Value;
+        }
+
         await _contexto.SaveChangesAsync();
         return new(200, MapearParaRespostaDto(ordem));
     }
@@ -142,19 +186,35 @@ public class OrdensReparacaoService : IOrdensReparacaoService
 
     private static RespostaOrdemReparacaoDto MapearParaRespostaDto(OrdemReparacao ordem) => new()
     {
-        Id = ordem.Id, DataEntrada = ordem.DataEntrada, DataConclusao = ordem.DataConclusao,
-        DescricaoProblema = ordem.DescricaoProblema, Estado = ordem.Estado,
-        CustoMaoDeObra = ordem.CustoMaoDeObra, CustoPecas = ordem.CustoPecas,
-        ValorTotal = ordem.ValorTotal, VeiculoId = ordem.VeiculoId, ClienteId = ordem.ClienteId
+        Id = ordem.Id,
+        DataEntrada = ordem.DataEntrada,
+        DataConclusao = ordem.DataConclusao,
+        DescricaoProblema = ordem.DescricaoProblema,
+        Estado = ordem.Estado,
+        CustoMaoDeObra = ordem.CustoMaoDeObra,
+        CustoPecas = ordem.CustoPecas,
+        ValorTotal = ordem.ValorTotal,
+        VeiculoId = ordem.VeiculoId,
+        ClienteId = ordem.ClienteId
     };
 
     private static DetalheOrdemReparacaoDto MapearParaDetalheDto(OrdemReparacao ordem) => new()
     {
-        Id = ordem.Id, DataEntrada = ordem.DataEntrada, DataConclusao = ordem.DataConclusao,
-        DescricaoProblema = ordem.DescricaoProblema, Estado = ordem.Estado,
-        CustoMaoDeObra = ordem.CustoMaoDeObra, CustoPecas = ordem.CustoPecas,
-        ValorTotal = ordem.ValorTotal, VeiculoId = ordem.VeiculoId, ClienteId = ordem.ClienteId,
+        Id = ordem.Id,
+        DataEntrada = ordem.DataEntrada,
+        DataConclusao = ordem.DataConclusao,
+        DescricaoProblema = ordem.DescricaoProblema,
+        Estado = ordem.Estado,
+        CustoMaoDeObra = ordem.CustoMaoDeObra,
+        CustoPecas = ordem.CustoPecas,
+        ValorTotal = ordem.ValorTotal,
+        VeiculoId = ordem.VeiculoId,
+        ClienteId = ordem.ClienteId,
         Pecas = ordem.Pecas.Select(p => new PecaAplicadaRespostaDto
-        { PecaId = p.PecaId, Quantidade = p.Quantidade, PrecoUnitario = p.PrecoUnitario }).ToList()
+        {
+            PecaId = p.PecaId,
+            Quantidade = p.Quantidade,
+            PrecoUnitario = p.PrecoUnitario
+        }).ToList()
     };
 }

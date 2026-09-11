@@ -1,4 +1,6 @@
-﻿namespace WorkShop.API.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace WorkShop.API.DTOs
 {
     public class CriarPedidoDto
     {
@@ -10,7 +12,9 @@
     {
         public int Id { get; set; }
         public string ClienteId { get; set; } = string.Empty;
+        [Required]
         public int VeiculoId { get; set; }
+        [Required]
         public string DescricaoProblema { get; set; } = string.Empty;
         public DateTime DataSubmissao { get; set; }
         public string Estado { get; set; } = string.Empty;

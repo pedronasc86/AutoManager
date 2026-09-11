@@ -1,7 +1,10 @@
 using Identity.API.DTOs;
 using Identity.API.Services;
+using Indentity.API.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.API.Controllers
 {
@@ -14,10 +17,15 @@ namespace Identity.API.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ITokenService _tokenService;
 
-    public AuthController(IAuthService authService)
-    {
-        _authService = authService;
-    }
+        public AuthController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ITokenService tokenService)
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _tokenService = tokenService;
+        }
 
         /// <summary>Regista uma nova conta de cliente.</summary>
         /// <param name="dto">Dados de registo da conta.</param>
@@ -171,7 +179,6 @@ namespace Identity.API.Controllers
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                // Filtra estritamente para incluir apenas a role "Cliente"
                 if (roles.Contains("Cliente", StringComparer.OrdinalIgnoreCase))
                 {
                     userList.Add(new UserListItemDto
@@ -519,6 +526,7 @@ namespace Identity.API.Controllers
 
             return NoContent();
         }
+
         /// <summary>Atualiza os dados de uma conta de utilizador.</summary>
         /// <param name="id">Identificador da conta de utilizador.</param>
         /// <param name="dto">Novos dados da conta.</param>
@@ -586,6 +594,7 @@ namespace Identity.API.Controllers
 
             return NoContent();
         }
+
         /// <summary>Cria uma conta de utilizador e atribui-lhe o perfil indicado.</summary>
         /// <param name="dto">Dados da conta a criar.</param>
         [Authorize(Roles = "Admin,admin")]
@@ -617,7 +626,6 @@ namespace Identity.API.Controllers
                 return BadRequest(new { message = errors });
             }
 
-            // Atribuir a role recebida no DTO ou definir "Cliente" por defeito
             var roleToAssign = string.IsNullOrWhiteSpace(dto.Role) ? "Cliente" : dto.Role;
             if (!await _roleManager.RoleExistsAsync(roleToAssign))
             {

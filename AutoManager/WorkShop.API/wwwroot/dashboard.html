@@ -656,7 +656,7 @@
 
                 <div class="form-group">
                     <label for="custoMaoDeObraInput">Custo de Mão de Obra (€)</label>
-                    <input type="number" step="0.01" id="custoMaoDeObraInput" required value="0.00">
+                    <input type="number" step="0.01" id="custoMaoDeObraInput" min="1" required value="0.00">
                 </div>
 
                 <div class="form-group border p-3 rounded bg-light" style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
@@ -674,7 +674,8 @@
                 </div>
 
                 <button type="submit" class="btn-submit-modal">Registar Ordem (Validar Stock)</button>
-                <div id="mensagemOrdem" class="mensagem-ordem"></div>
+
+                <div id="mensagemOrdem" class="mensagem-ordem" style="margin-top: 12px; font-weight: 500;"></div>
             </form>
         </div>
     </div>
@@ -858,7 +859,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- MODAL DE FILTRO DE PEÇAS -->
     <div id="modalFiltroPecas" class="modal">
         <div class="modal-content">
@@ -1005,7 +1006,8 @@
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label for="pedidoNovoEstado" style="display: block; margin-bottom: 5px; font-weight: 500;">Novo Estado / Decisão:</label>
-                        <select id="pedidoNovoEstado" class="form-control" style="width: 100%; padding: 8px;">
+                        <select id="pedidoNovoEstado" class="form-control" style="width: 100%; padding: 8px;" required>
+                            <option value="" disabled selected>Seleciona o estado...</option>
                             <option value="Aprovado">Aprovado</option>
                             <option value="Rejeitado">Rejeitado</option>
                         </select>
@@ -1013,7 +1015,7 @@
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label for="pedidoObservacoes" style="display: block; margin-bottom: 5px; font-weight: 500;">Observações / Notas:</label>
-                        <textarea id="pedidoObservacoes" class="form-control" rows="3" style="width: 100%; padding: 8px;" placeholder="Insere as observações..."></textarea>
+                        <textarea id="pedidoObservacoes" class="form-control" rows="3" style="width: 100%; padding: 8px;" placeholder="Insere as observações..." required></textarea>
                     </div>
 
                     <div id="mensagemAnalisePedido" class="mensagem-ordem" style="margin-bottom: 10px;"></div>

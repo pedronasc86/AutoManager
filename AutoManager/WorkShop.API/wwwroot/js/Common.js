@@ -39,9 +39,12 @@ function formatarData(data) {
         : 'Ainda não concluída';
 }
 
-// Máscara automática para matrículas (XX-XX-XX)
 document.addEventListener('input', function (e) {
-    if (e.target && (e.target.id === 'matriculaInput' || e.target.id === 'editMatriculaInput')) {
+    if (e.target && (
+        e.target.id === 'matriculaInput' ||
+        e.target.id === 'editMatriculaInput' ||
+        e.target.id === 'adminMatriculaInput'
+    )) {
         let valor = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         if (valor.length > 6) valor = valor.substring(0, 6);
 
