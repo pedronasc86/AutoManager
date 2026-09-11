@@ -9,6 +9,7 @@ using PartsCatalog.API.Services;
 
 namespace PartsCatalog.API.Controllers
 {
+    /// <summary>Disponibiliza operações de consulta e gestão do catálogo de peças.</summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -25,20 +26,24 @@ namespace PartsCatalog.API.Controllers
             _mapper = mapper;
         }
 
-        // GET: api/pecas (Filtros, Pesquisa e Ordenação OData)
+        /// <summary>Lista as peças disponíveis, com suporte a filtros, pesquisa e ordenação OData.</summary>
         [HttpGet]
         [AllowAnonymous]
         [EnableQuery]
+        [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
         public IActionResult ObterTodasOData()
         {
             var query = _pecaService.GetPartsQuery();
             return Ok(query);
         }
 
-        // GET: api/pecas/{id}
+        /// <summary>Obtém uma peça pelo seu identificador.</summary>
+        /// <param name="id">Identificador único da peça.</param>
         [HttpGet("{id:guid}")]
         [Route("{id:guid}")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<PecaResponse>> ObterPorId(Guid id)
         {
             var peca = await _repository.ObterPorIdAsync(id);
@@ -51,8 +56,12 @@ namespace PartsCatalog.API.Controllers
             return Ok(response);
         }
 
-        // POST: api/pecas
+        /// <summary>Cria uma nova peça no catálogo.</summary>
+        /// <param name="request">Dados da peça a criar.</param>
         [HttpPost]
+        [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<PecaResponse>> Criar([FromBody] CriarPecaRequest request)
         {
             var novaPeca = _mapper.Map<Peca>(request);
@@ -68,8 +77,13 @@ namespace PartsCatalog.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id = novaPeca.Id }, response);
         }
 
-        // PUT: api/pecas/{id}
+        /// <summary>Atualiza os dados de uma peça existente.</summary>
+        /// <param name="id">Identificador único da peça.</param>
+        /// <param name="request">Novos dados da peça.</param>
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Atualizar(Guid id, [FromBody] AtualizarPecaRequest request)
         {
             var peca = await _repository.ObterPorIdAsync(id);
@@ -86,8 +100,11 @@ namespace PartsCatalog.API.Controllers
             return NoContent();
         }
 
-        // DELETE: api/pecas/{id}
+        /// <summary>Remove uma peça do catálogo.</summary>
+        /// <param name="id">Identificador único da peça.</param>
         [HttpDelete("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Remover(Guid id)
         {
             var peca = await _repository.ObterPorIdAsync(id);
@@ -99,10 +116,13 @@ namespace PartsCatalog.API.Controllers
             return NoContent();
         }
 
-        // PATCH: api/pecas/{id}/inativar
+        /// <summary>Inativa uma peça descontinuada, impedindo a sua utilização em novas reparações.</summary>
+        /// <param name="id">Identificador único da peça.</param>
         [HttpPatch("{id:guid}/inativar")]
         [AllowAnonymous]
         [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> InativarPeca(Guid id)
         {
             var sucesso = await _repository.InativarAsync(id);
@@ -112,10 +132,13 @@ namespace PartsCatalog.API.Controllers
             return NoContent();
         }
 
-        // PATCH: api/pecas/{id}/ativar
+        /// <summary>Reativa uma peça previamente inativada.</summary>
+        /// <param name="id">Identificador único da peça.</param>
         [HttpPatch("{id:guid}/ativar")]
         [AllowAnonymous]
         [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AtivarPeca(Guid id)
         {
             var sucesso = await _repository.AtivarAsync(id);
@@ -125,9 +148,13 @@ namespace PartsCatalog.API.Controllers
             return NoContent();
         }
 
-        // GET: api/pecas/{id}/disponibilidade?quantidade=2
+        /// <summary>Verifica se existe stock suficiente de uma peça para a quantidade pedida.</summary>
+        /// <param name="id">Identificador único da peça.</param>
+        /// <param name="quantidade">Quantidade a validar.</param>
         [HttpGet("{id:guid}/disponibilidade")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<bool>> VerificarDisponibilidade(Guid id, [FromQuery] int quantidade)
         {
             if (quantidade <= 0)
@@ -138,10 +165,11 @@ namespace PartsCatalog.API.Controllers
             return Ok(disponivel);
         }
 
-        // GET: api/pecas/admin/todas
+        /// <summary>Lista todas as peças do catálogo, incluindo as inativas.</summary>
         [HttpGet("admin/todas")]
         [AllowAnonymous]
         [Authorize(Roles = "Mecanico,mecanico,Gestor,gestor,Admin,admin")]
+        [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<PecaResponse>>> ObterTodasAdmin()
         {
             var pecas = await _repository.ObterTodasAsync();

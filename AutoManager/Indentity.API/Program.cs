@@ -100,6 +100,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Identity.API", Version = "v1" });
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{typeof(Program).Assembly.GetName().Name}.xml");
+    if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath);
 
     // Permite introduzir o Token JWT para testar rotas protegidas
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
