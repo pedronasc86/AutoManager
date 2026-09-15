@@ -3,18 +3,19 @@ using WorkShop.API.Data;
 using WorkShop.API.DTOs;
 using WorkShop.API.Models;
 using WorkShop.API.Services.Auth;
+using WorkShop.API.Repositories;
 
 namespace WorkShop.API.Services.Ordens;
 
 public class OrdensReparacaoService : IOrdensReparacaoService
 {
-    private readonly WorkshopContext _contexto;
+    private readonly IWorkshopRepository _repository;
     private readonly CatalogoPecasService _catalogoPecasService;
     private readonly IUserContextService _userContextService;
 
-    public OrdensReparacaoService(WorkshopContext contexto, CatalogoPecasService catalogoPecasService, IUserContextService userContextService)
+    public OrdensReparacaoService(IWorkshopRepository repository, CatalogoPecasService catalogoPecasService, IUserContextService userContextService)
     {
-        _contexto = contexto;
+        _repository = repository;
         _catalogoPecasService = catalogoPecasService;
         _userContextService = userContextService;
     }
@@ -26,25 +27,18 @@ public class OrdensReparacaoService : IOrdensReparacaoService
 
         pagina = Math.Max(pagina, 1);
         tamanhoPagina = Math.Clamp(tamanhoPagina, 1, 20);
-        var totalOrdens = await _contexto.OrdensReparacao.CountAsync();
-        var totalEmCurso = await _contexto.OrdensReparacao.CountAsync(o => o.Estado == "Em Curso");
-        var totalConcluidas = await _contexto.OrdensReparacao.CountAsync(o => o.Estado == "Concluída");
-        var query = _contexto.OrdensReparacao.AsNoTracking();
-        if (veiculoId.HasValue) query = query.Where(o => o.VeiculoId == veiculoId.Value);
-
-        var totalItens = await query.CountAsync();
-        var ordens = await query.OrderBy(o => o.Id).Skip((pagina - 1) * tamanhoPagina).Take(tamanhoPagina).ToListAsync();
-        var totalPaginas = Math.Max(1, (int)Math.Ceiling(totalItens / (double)tamanhoPagina));
+        var resultadoPaginado = await _repository.ObterOrdensPaginadasAsync(pagina, tamanhoPagina, veiculoId);
+        var totalPaginas = Math.Max(1, (int)Math.Ceiling(resultadoPaginado.TotalItens / (double)tamanhoPagina));
 
         return new(200, new RespostaPaginadaOrdensDto
         {
-            Itens = ordens.Select(MapearParaRespostaDto).ToList(),
+            Itens = resultadoPaginado.Itens.Select(MapearParaRespostaDto).ToList(),
             PaginaAtual = pagina,
             TotalPaginas = totalPaginas,
-            TotalItens = totalItens,
-            TotalOrdens = totalOrdens,
-            TotalEmCurso = totalEmCurso,
-            TotalConcluidas = totalConcluidas
+            TotalItens = resultadoPaginado.TotalItens,
+            TotalOrdens = resultadoPaginado.TotalOrdens,
+            TotalEmCurso = resultadoPaginado.TotalEmCurso,
+            TotalConcluidas = resultadoPaginado.TotalConcluidas
         });
     }
 
@@ -58,7 +52,7 @@ public class OrdensReparacaoService : IOrdensReparacaoService
         if (dto.CustoMaoDeObra <= 0)
             return new(400, new { mensagem = "O custo de mão de obra deve ser superior a zero." });
 
-        var veiculo = await _contexto.Veiculos.AsNoTracking().FirstOrDefaultAsync(v => v.Id == dto.VeiculoId);
+        var veiculo = await _repository.ObterVeiculoAsync(dto.VeiculoId, semRastreio: true);
         if (veiculo is null)
             return new(400, new { mensagem = $"Veículo com ID {dto.VeiculoId} não foi encontrado." });
         if (!string.Equals(veiculo.ClienteId, dto.ClienteId, StringComparison.Ordinal))
@@ -99,8 +93,7 @@ public class OrdensReparacaoService : IOrdensReparacaoService
             Pecas = pecasDaOrdem
         };
 
-        _contexto.OrdensReparacao.Add(ordem);
-        await _contexto.SaveChangesAsync();
+        await _repository.AdicionarOrdemAsync(ordem);
 
         foreach (var itemPeca in dto.Pecas ?? [])
             await _catalogoPecasService.AtualizarStockAsync(itemPeca.PecaId, itemPeca.Quantidade);
@@ -110,13 +103,13 @@ public class OrdensReparacaoService : IOrdensReparacaoService
 
     public async Task<OrdemServiceResult> ObterPorIdAsync(int id)
     {
-        var ordem = await _contexto.OrdensReparacao.Include(o => o.Pecas).FirstOrDefaultAsync(o => o.Id == id);
+        var ordem = await _repository.ObterOrdemAsync(id, incluirPecas: true);
         return ordem is null ? new(404) : new(200, MapearParaDetalheDto(ordem));
     }
 
     public async Task<OrdemServiceResult> AtualizarAsync(int id, AtualizarOrdemReparacaoDto dto)
     {
-        var ordem = await _contexto.OrdensReparacao.FindAsync(id);
+        var ordem = await _repository.ObterOrdemAsync(id);
         if (ordem is null) return new(404, new { mensagem = $"Ordem de reparação #{id} não encontrada." });
 
         if (!string.IsNullOrWhiteSpace(dto.Estado))
@@ -148,14 +141,13 @@ public class OrdensReparacaoService : IOrdensReparacaoService
             ordem.CustoPecas = dto.CustoPecas.Value;
         }
 
-        await _contexto.SaveChangesAsync();
+        await _repository.GuardarAsync();
         return new(200, MapearParaRespostaDto(ordem));
     }
 
     public async Task<OrdemServiceResult> ObterHistoricoPorVeiculoAsync(int veiculoId)
     {
-        var ordens = await _contexto.OrdensReparacao.Where(o => o.VeiculoId == veiculoId)
-            .OrderByDescending(o => o.DataEntrada).ToListAsync();
+        var ordens = await _repository.ObterOrdensAsync(veiculoId: veiculoId);
         return new(200, ordens.Select(MapearParaRespostaDto));
     }
 
@@ -164,23 +156,21 @@ public class OrdensReparacaoService : IOrdensReparacaoService
         var utilizadorAutenticadoId = _userContextService.GetCurrentUserId();
         if (string.IsNullOrWhiteSpace(utilizadorAutenticadoId)) return new(401);
         if (!string.Equals(utilizadorAutenticadoId, clienteId, StringComparison.Ordinal)) return new(403);
-        var ordens = await _contexto.OrdensReparacao.Where(o => o.ClienteId == clienteId)
-            .OrderByDescending(o => o.DataEntrada).ToListAsync();
+        var ordens = await _repository.ObterOrdensAsync(clienteId: clienteId);
         return new(200, ordens.Select(MapearParaRespostaDto));
     }
 
     public async Task<OrdemServiceResult> ApagarAsync(int id)
     {
-        var ordem = await _contexto.OrdensReparacao.FindAsync(id);
+        var ordem = await _repository.ObterOrdemAsync(id);
         if (ordem is null) return new(404);
-        _contexto.OrdensReparacao.Remove(ordem);
-        await _contexto.SaveChangesAsync();
+        await _repository.RemoverOrdemAsync(ordem);
         return new(204);
     }
 
     public async Task<OrdemServiceResult> ObterTodasSemPaginacaoAsync()
     {
-        var ordens = await _contexto.OrdensReparacao.AsNoTracking().OrderByDescending(o => o.Id).ToListAsync();
+        var ordens = await _repository.ObterOrdensAsync(porIdDescendente: true);
         return new(200, ordens.Select(MapearParaRespostaDto));
     }
 

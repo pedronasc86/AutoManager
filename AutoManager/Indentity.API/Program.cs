@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Identity.API.Repositories;
 using System.Data;
 using System.Text;
 
@@ -54,6 +55,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // =========================================================================
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddHttpContextAccessor();
 
 // =========================================================================

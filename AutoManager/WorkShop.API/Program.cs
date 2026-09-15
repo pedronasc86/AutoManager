@@ -8,6 +8,7 @@ using WorkShop.API.Services.Auth;
 using WorkShop.API.Services.Ordens;
 using WorkShop.API.Services.Pedidos;
 using WorkShop.API.Services.Veiculos;
+using WorkShop.API.Repositories;
 
 namespace WorkShop.API
 {
@@ -70,6 +71,7 @@ namespace WorkShop.API
             builder.Services.AddScoped<IPedidoReparacaoService, PedidoReparacaoService>();
             builder.Services.AddScoped<IOrdensReparacaoService, OrdensReparacaoService>();
             builder.Services.AddScoped<IVeiculoService, VeiculoService>();
+            builder.Services.AddScoped<IWorkshopRepository, WorkshopRepository>();
             // Regista o HttpClient apontando para o URL da PartsCatalog.API
             //builder.Services.AddHttpClient<WorkShop.API.Services.CatalogoPecasService>(client =>
             //{
