@@ -1,282 +1,57 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WorkShop.API.Data;
 using WorkShop.API.DTOs;
-using WorkShop.API.Models;
-using WorkShop.API.Services.Auth;
+using WorkShop.API.Services.Veiculos;
 
-namespace WorkShop.API.Controllers
+namespace WorkShop.API.Controllers;
+
+/// <summary>Gere os veículos registados pelos clientes da oficina.</summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class VeiculosController : ControllerBase
 {
-    /// <summary>
-    /// Gere os veículos registados pelos clientes da oficina.
-    /// </summary>
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
-    public class VeiculosController : ControllerBase
-    {
-        private readonly WorkshopContext _contexto;
-        private readonly IUserContextService _userContextService;
+    private readonly IVeiculoService _veiculoService;
 
-        public VeiculosController(WorkshopContext contexto, IUserContextService userContextService)
-        {
-            _contexto = contexto;
-            _userContextService = userContextService;
-        }
+    public VeiculosController(IVeiculoService veiculoService) => _veiculoService = veiculoService;
 
-        /// <summary>
-        /// Lista todos os veículos registados na oficina.
-        /// </summary>
-        /// <returns>Uma coleção de veículos ordenada por identificador.</returns>
-        [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<RespostaVeiculoDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ObterTodos()
-        {
-            var veiculos = await _contexto.Veiculos
-                .AsNoTracking()
-                .OrderBy(v => v.Id)
-                .Select(v => new RespostaVeiculoDto
-                {
-                    Id = v.Id,
-                    Matricula = v.Matricula,
-                    Marca = v.Marca,
-                    Modelo = v.Modelo,
-                    Ano = v.Ano,
-                    ClienteId = v.ClienteId
-                })
-                .ToListAsync();
+    /// <summary>Lista todos os veículos registados na oficina.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<RespostaVeiculoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ObterTodos() => ConverterResposta(await _veiculoService.ObterTodosAsync());
 
-            return Ok(veiculos);
-        }
+    /// <summary>Cria um veículo e associa-o ao utilizador autenticado.</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(RespostaVeiculoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CriarVeiculo([FromBody] CriarVeiculoDto dto) => ConverterResposta(await _veiculoService.CriarAsync(dto));
 
-        /// <summary>
-        /// Cria um veículo e associa-o ao utilizador autenticado.
-        /// </summary>
-        /// <param name="dto">Dados do veículo a registar.</param>
-        /// <returns>O veículo criado.</returns>
-        [HttpPost]
-        [Authorize]
-        [ProducesResponseType(typeof(RespostaVeiculoDto), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CriarVeiculo([FromBody] CriarVeiculoDto dto)
-        {
-            try
-            {
-                var matriculaLimpa = dto.Matricula?.Trim().ToUpper() ?? string.Empty;
+    /// <summary>Obtém um veículo através do seu identificador.</summary>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(RespostaVeiculoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ObterPorId(int id) => ConverterResposta(await _veiculoService.ObterPorIdAsync(id));
 
-                if (string.IsNullOrEmpty(matriculaLimpa))
-                {
-                    return BadRequest(new { message = "A matrícula é obrigatória." });
-                }
+    /// <summary>Atualiza os dados de um veículo existente.</summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AtualizarVeiculo(int id, [FromBody] CriarVeiculoDto dto) => ConverterResposta(await _veiculoService.AtualizarAsync(id, dto));
 
-                var regexMatricula = new System.Text.RegularExpressions.Regex(@"^([A-Z]{2}-\d{2}-\d{2})|(\d{2}-[A-Z]{2}-\d{2})|(\d{2}-\d{2}-[A-Z]{2})|([A-Z]{2}-\d{2}-[A-Z]{2})$");
-                if (!regexMatricula.IsMatch(matriculaLimpa))
-                {
-                    return BadRequest(new { message = "Formato de matrícula inválido. Formatos aceites: 00-AA-00, AA-00-AA, 00-00-AA ou AA-00-00." });
-                }
+    /// <summary>Lista apenas os veículos associados ao utilizador autenticado.</summary>
+    [HttpGet("meus")]
+    [ProducesResponseType(typeof(IEnumerable<RespostaVeiculoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ObterMeusVeiculos() => ConverterResposta(await _veiculoService.ObterMeusAsync());
 
-                int anoAtual = DateTime.Now.Year;
-                if (dto.Ano < 1900 || dto.Ano > anoAtual)
-                {
-                    return BadRequest(new { message = $"O ano do veículo tem de estar compreendido entre 1900 e {anoAtual}." });
-                }
+    /// <summary>Elimina um veículo registado.</summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EliminarVeiculo(int id) => ConverterResposta(await _veiculoService.EliminarAsync(id));
 
-                var existeMatricula = await _contexto.Veiculos
-                    .AnyAsync(v => v.Matricula.ToUpper() == matriculaLimpa);
-
-                if (existeMatricula)
-                {
-                    return BadRequest(new { message = "Já existe um veículo registado com esta matrícula." });
-                }
-
-                var clienteId = _userContextService.GetCurrentUserId();
-
-                if (string.IsNullOrEmpty(clienteId))
-                {
-                    return Unauthorized(new { message = "Não foi possível identificar o cliente através do token." });
-                }
-
-                var veiculo = new Veiculo
-                {
-                    Matricula = matriculaLimpa,
-                    Marca = dto.Marca,
-                    Modelo = dto.Modelo,
-                    Ano = dto.Ano,
-                    ClienteId = clienteId
-                };
-
-                _contexto.Veiculos.Add(veiculo);
-                await _contexto.SaveChangesAsync();
-
-                var resposta = new RespostaVeiculoDto
-                {
-                    Id = veiculo.Id,
-                    Matricula = veiculo.Matricula,
-                    Marca = veiculo.Marca,
-                    Modelo = veiculo.Modelo,
-                    Ano = veiculo.Ano,
-                    ClienteId = veiculo.ClienteId
-                };
-
-                return CreatedAtAction(nameof(ObterPorId), new { id = veiculo.Id }, resposta);
-            }
-            catch (Exception ex)
-            {
-                var mensagemDetalhada = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return StatusCode(500, new { message = "Erro ao guardar na base de dados: " + mensagemDetalhada });
-            }
-        }
-
-        /// <summary>
-        /// Obtém um veículo através do seu identificador.
-        /// </summary>
-        /// <param name="id">Identificador do veículo.</param>
-        /// <returns>Os dados do veículo pedido.</returns>
-        [HttpGet("{id}")]
-        [ProducesResponseType(typeof(RespostaVeiculoDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ObterPorId(int id)
-        {
-            var veiculo = await _contexto.Veiculos.FindAsync(id);
-            if (veiculo == null) return NotFound();
-
-            return Ok(new RespostaVeiculoDto
-            {
-                Id = veiculo.Id,
-                Matricula = veiculo.Matricula,
-                Marca = veiculo.Marca,
-                Modelo = veiculo.Modelo,
-                Ano = veiculo.Ano,
-                ClienteId = veiculo.ClienteId
-            });
-        }
-
-        /// <summary>
-        /// Atualiza os dados de um veículo existente.
-        /// </summary>
-        /// <param name="id">Identificador do veículo a atualizar.</param>
-        /// <param name="dto">Novos dados do veículo.</param>
-        [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> AtualizarVeiculo(int id, [FromBody] CriarVeiculoDto dto)
-        {
-            try
-            {
-                var matriculaLimpa = dto.Matricula?.Trim().ToUpper() ?? string.Empty;
-
-                if (string.IsNullOrEmpty(matriculaLimpa))
-                {
-                    return BadRequest(new { message = "A matrícula é obrigatória." });
-                }
-
-                var regexMatricula = new System.Text.RegularExpressions.Regex(@"^([A-Z]{2}-\d{2}-\d{2})|(\d{2}-[A-Z]{2}-\d{2})|(\d{2}-\d{2}-[A-Z]{2})|([A-Z]{2}-\d{2}-[A-Z]{2})$");
-                if (!regexMatricula.IsMatch(matriculaLimpa))
-                {
-                    return BadRequest(new { message = "Formato de matrícula inválido. Formatos aceites: 00-AA-00, AA-00-AA, 00-00-AA ou AA-00-00." });
-                }
-
-                int anoAtual = DateTime.Now.Year;
-                if (dto.Ano < 1900 || dto.Ano > anoAtual)
-                {
-                    return BadRequest(new { message = $"O ano do veículo tem de estar compreendido entre 1900 e {anoAtual}." });
-                }
-
-                var existeMatriculaOutro = await _contexto.Veiculos
-                    .AnyAsync(v => v.Id != id && v.Matricula.ToUpper() == matriculaLimpa);
-
-                if (existeMatriculaOutro)
-                {
-                    return BadRequest(new { message = "Já existe outro veículo registado com esta matrícula." });
-                }
-
-                var veiculo = await _contexto.Veiculos.FindAsync(id);
-
-                if (veiculo == null)
-                {
-                    return NotFound(new { message = "Veículo não encontrado." });
-                }
-
-                veiculo.Matricula = matriculaLimpa;
-                veiculo.Marca = dto.Marca?.Trim() ?? string.Empty;
-                veiculo.Modelo = dto.Modelo?.Trim() ?? string.Empty;
-                veiculo.Ano = dto.Ano;
-
-                _contexto.Veiculos.Update(veiculo);
-                await _contexto.SaveChangesAsync();
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                var mensagemDetalhada = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return StatusCode(500, new { message = "Erro ao atualizar na base de dados: " + mensagemDetalhada });
-            }
-        }
-
-        /// <summary>
-        /// Lista apenas os veículos associados ao utilizador autenticado.
-        /// </summary>
-        /// <returns>Uma coleção dos veículos do cliente autenticado.</returns>
-        [HttpGet("meus")]
-        [ProducesResponseType(typeof(IEnumerable<RespostaVeiculoDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ObterMeusVeiculos()
-        {
-            var clienteId = _userContextService.GetCurrentUserId();
-
-            if (string.IsNullOrEmpty(clienteId))
-            {
-                return Unauthorized(new { message = "Não foi possível identificar o cliente através do token." });
-            }
-
-            var veiculos = await _contexto.Veiculos
-                .AsNoTracking()
-                .Where(v => v.ClienteId == clienteId)
-                .OrderBy(v => v.Id)
-                .Select(v => new RespostaVeiculoDto
-                {
-                    Id = v.Id,
-                    Matricula = v.Matricula,
-                    Marca = v.Marca,
-                    Modelo = v.Modelo,
-                    Ano = v.Ano,
-                    ClienteId = v.ClienteId
-                })
-                .ToListAsync();
-
-            return Ok(veiculos);
-        }
-
-        /// <summary>
-        /// Elimina um veículo registado.
-        /// </summary>
-        /// <param name="id">Identificador do veículo a eliminar.</param>
-        [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> EliminarVeiculo(int id)
-        {
-            var veiculo = await _contexto.Veiculos.FindAsync(id);
-
-            if (veiculo == null)
-            {
-                return NotFound("Veículo não encontrado.");
-            }
-
-            _contexto.Veiculos.Remove(veiculo);
-            await _contexto.SaveChangesAsync();
-
-            return NoContent();
-        }
-    }
+    private IActionResult ConverterResposta(VeiculoServiceResult resultado) => StatusCode(resultado.StatusCode, resultado.Data);
 }
