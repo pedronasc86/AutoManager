@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
-using WorkShop.API.Data;
 using WorkShop.API.DTOs;
 using WorkShop.API.Models;
+using WorkShop.API.Repositories;
 using WorkShop.API.Services.Auth;
 
 namespace WorkShop.API.Services.Veiculos;
@@ -13,24 +12,24 @@ public class VeiculoService : IVeiculoService
         @"^(?:[A-Z]{2}-\d{2}-\d{2}|\d{2}-[A-Z]{2}-\d{2}|\d{2}-\d{2}-[A-Z]{2}|[A-Z]{2}-\d{2}-[A-Z]{2})$",
         RegexOptions.Compiled);
 
-    private readonly WorkshopContext _contexto;
+    private readonly IWorkshopRepository _repository;
     private readonly IUserContextService _userContextService;
 
-    public VeiculoService(WorkshopContext contexto, IUserContextService userContextService)
+    public VeiculoService(IWorkshopRepository repository, IUserContextService userContextService)
     {
-        _contexto = contexto;
+        _repository = repository;
         _userContextService = userContextService;
     }
 
     public async Task<VeiculoServiceResult> ObterTodosAsync()
-        => new(200, await CriarQueryResposta().OrderBy(v => v.Id).ToListAsync());
+        => new(200, (await _repository.ObterVeiculosAsync()).Select(Mapear));
 
     public async Task<VeiculoServiceResult> CriarAsync(CriarVeiculoDto dto)
     {
         var validacao = await ValidarDadosAsync(dto);
         if (validacao.Erro is not null) return new(400, new { message = validacao.Erro });
 
-        if (await _contexto.Veiculos.AnyAsync(v => v.Matricula.ToUpper() == validacao.Matricula))
+        if (await _repository.MatriculaExisteAsync(validacao.Matricula!))
             return new(400, new { message = "Já existe um veículo registado com esta matrícula." });
 
         var clienteId = _userContextService.GetCurrentUserId();
@@ -45,14 +44,13 @@ public class VeiculoService : IVeiculoService
             Ano = dto.Ano,
             ClienteId = clienteId
         };
-        _contexto.Veiculos.Add(veiculo);
-        await _contexto.SaveChangesAsync();
+        await _repository.AdicionarVeiculoAsync(veiculo);
         return new(201, Mapear(veiculo));
     }
 
     public async Task<VeiculoServiceResult> ObterPorIdAsync(int id)
     {
-        var veiculo = await _contexto.Veiculos.AsNoTracking().FirstOrDefaultAsync(v => v.Id == id);
+        var veiculo = await _repository.ObterVeiculoAsync(id, semRastreio: true);
         return veiculo is null ? new(404) : new(200, Mapear(veiculo));
     }
 
@@ -61,17 +59,17 @@ public class VeiculoService : IVeiculoService
         var validacao = await ValidarDadosAsync(dto);
         if (validacao.Erro is not null) return new(400, new { message = validacao.Erro });
 
-        if (await _contexto.Veiculos.AnyAsync(v => v.Id != id && v.Matricula.ToUpper() == validacao.Matricula))
+        if (await _repository.MatriculaExisteAsync(validacao.Matricula!, id))
             return new(400, new { message = "Já existe outro veículo registado com esta matrícula." });
 
-        var veiculo = await _contexto.Veiculos.FindAsync(id);
+        var veiculo = await _repository.ObterVeiculoAsync(id);
         if (veiculo is null) return new(404, new { message = "Veículo não encontrado." });
 
         veiculo.Matricula = validacao.Matricula!;
         veiculo.Marca = dto.Marca.Trim();
         veiculo.Modelo = dto.Modelo.Trim();
         veiculo.Ano = dto.Ano;
-        await _contexto.SaveChangesAsync();
+        await _repository.GuardarAsync();
         return new(204);
     }
 
@@ -81,22 +79,16 @@ public class VeiculoService : IVeiculoService
         if (string.IsNullOrWhiteSpace(clienteId))
             return new(401, new { message = "Não foi possível identificar o cliente através do token." });
 
-        return new(200, await CriarQueryResposta().Where(v => v.ClienteId == clienteId).OrderBy(v => v.Id).ToListAsync());
+        return new(200, (await _repository.ObterVeiculosAsync(clienteId)).Select(Mapear));
     }
 
     public async Task<VeiculoServiceResult> EliminarAsync(int id)
     {
-        var veiculo = await _contexto.Veiculos.FindAsync(id);
+        var veiculo = await _repository.ObterVeiculoAsync(id);
         if (veiculo is null) return new(404, "Veículo não encontrado.");
-        _contexto.Veiculos.Remove(veiculo);
-        await _contexto.SaveChangesAsync();
+        await _repository.RemoverVeiculoAsync(veiculo);
         return new(204);
     }
-
-    private IQueryable<RespostaVeiculoDto> CriarQueryResposta() => _contexto.Veiculos.AsNoTracking().Select(v => new RespostaVeiculoDto
-    {
-        Id = v.Id, Matricula = v.Matricula, Marca = v.Marca, Modelo = v.Modelo, Ano = v.Ano, ClienteId = v.ClienteId
-    });
 
     private Task<(string? Matricula, string? Erro)> ValidarDadosAsync(CriarVeiculoDto dto)
     {

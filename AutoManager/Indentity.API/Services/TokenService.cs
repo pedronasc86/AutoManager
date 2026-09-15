@@ -1,6 +1,6 @@
 ﻿using Indentity.API.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Identity.API.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -10,12 +10,12 @@ namespace Identity.API.Services
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _config;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IAuthRepository _repository;
 
-        public TokenService(IConfiguration config, UserManager<ApplicationUser> userManager)
+        public TokenService(IConfiguration config, IAuthRepository repository)
         {
             _config = config;
-            _userManager = userManager;
+            _repository = repository;
         }
         public async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
         {
@@ -28,7 +28,7 @@ namespace Identity.API.Services
             };
 
             // Adicionar as Roles (Admin, Empresa/Contabilista, Mecânico, etc.)
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await _repository.ObterRolesAsync(user);
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));

@@ -4,21 +4,22 @@ using WorkShop.API.DTOs;
 using WorkShop.API.Models;
 using WorkShop.API.Services.Pedidos;
 
+using WorkShop.API.Repositories;
+
 namespace WorkShop.API.Services
 {
     public class PedidoReparacaoService : IPedidoReparacaoService
     {
-        private readonly WorkshopContext _context;
+        private readonly IWorkshopRepository _repository;
 
-        public PedidoReparacaoService(WorkshopContext context)
+        public PedidoReparacaoService(IWorkshopRepository repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
         public async Task<PedidoReparacaoResponseDto> CriarPedidoAsync(string clienteId, CriarPedidoDto dto)
         {
-            var veiculo = await _context.Veiculos
-                .FirstOrDefaultAsync(v => v.Id == dto.VeiculoId && v.ClienteId == clienteId);
+            var veiculo = await _repository.ObterVeiculoDoClienteAsync(dto.VeiculoId, clienteId);
 
             if (veiculo == null)
             {
@@ -34,25 +35,21 @@ namespace WorkShop.API.Services
                 Estado = "Pendente"
             };
 
-            _context.PedidosReparacao.Add(pedido);
-            await _context.SaveChangesAsync();
+            await _repository.AdicionarPedidoAsync(pedido);
 
             return MapearParaDto(pedido);
         }
 
         public async Task<IEnumerable<PedidoReparacaoResponseDto>> ObterPendentesAsync()
         {
-            var pedidos = await _context.PedidosReparacao
-                .Where(p => p.Estado == "Pendente")
-                .OrderByDescending(p => p.DataSubmissao)
-                .ToListAsync();
+            var pedidos = await _repository.ObterPedidosAsync(estado: "Pendente");
 
             return pedidos.Select(MapearParaDto);
         }
 
         public async Task<PedidoReparacaoResponseDto?> AtualizarEstadoAsync(int id, string novoEstado, string? observacoes)
         {
-            var pedido = await _context.PedidosReparacao.FindAsync(id);
+            var pedido = await _repository.ObterPedidoAsync(id);
             if (pedido == null) return null;
 
             pedido.Estado = novoEstado;
@@ -61,7 +58,7 @@ namespace WorkShop.API.Services
                 pedido.ObservacoesAdmin = observacoes;
             }
 
-            await _context.SaveChangesAsync();
+            await _repository.GuardarAsync();
 
             if (novoEstado == "Aceite")
             {
@@ -75,8 +72,7 @@ namespace WorkShop.API.Services
                     CustoMaoDeObra = 0,
                     CustoPecas = 0
                 };
-                _context.OrdensReparacao.Add(ordem);
-                await _context.SaveChangesAsync();
+                await _repository.AdicionarOrdemAsync(ordem);
             }
 
             return MapearParaDto(pedido);
@@ -95,19 +91,14 @@ namespace WorkShop.API.Services
 
         public async Task<IEnumerable<PedidoReparacaoResponseDto>> ObterPedidosDoClienteAsync(string clienteId)
         {
-            var pedidos = await _context.PedidosReparacao
-                .Where(p => p.ClienteId == clienteId)
-                .OrderByDescending(p => p.DataSubmissao)
-                .ToListAsync();
+            var pedidos = await _repository.ObterPedidosAsync(clienteId: clienteId);
 
             return pedidos.Select(MapearParaDto);
         }
 
         public async Task<IEnumerable<PedidoReparacaoResponseDto>> ObterTodosAsync()
         {
-            var pedidos = await _context.PedidosReparacao
-                .OrderByDescending(p => p.DataSubmissao)
-                .ToListAsync();
+            var pedidos = await _repository.ObterPedidosAsync();
 
             return pedidos.Select(MapearParaDto);
         }

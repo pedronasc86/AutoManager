@@ -2,40 +2,37 @@ using Identity.API.DTOs;
 using Indentity.API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Identity.API.Repositories;
 
 namespace Identity.API.Services;
 
 public class AuthService : IAuthService
 {
     private static readonly string[] RolesPermitidas = ["Cliente", "Mecanico", "Admin"];
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IAuthRepository _repository;
     private readonly ITokenService _tokenService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public AuthService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
-        ITokenService tokenService, IHttpContextAccessor httpContextAccessor)
+    public AuthService(IAuthRepository repository, ITokenService tokenService, IHttpContextAccessor httpContextAccessor)
     {
-        _userManager = userManager;
-        _roleManager = roleManager;
+        _repository = repository;
         _tokenService = tokenService;
         _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AuthServiceResult> RegistarClienteAsync(RegisterDto dto)
     {
-        if (await _userManager.FindByEmailAsync(dto.Email) is not null)
+        if (await _repository.ObterPorEmailAsync(dto.Email) is not null)
             return Falha("Este email já se encontra registado.");
 
         var user = CriarModeloUtilizador(dto.Email, dto.FirstName);
-        var result = await _userManager.CreateAsync(user, dto.Password);
+        var result = await _repository.CriarAsync(user, dto.Password);
         if (!result.Succeeded) return Falha(result.Errors);
 
         var roleResult = await GarantirEAdicionarRoleAsync(user, "Cliente");
         if (!roleResult.Succeeded)
         {
-            await _userManager.DeleteAsync(user);
+            await _repository.ApagarAsync(user);
             return Falha(roleResult.Errors);
         }
 
@@ -44,8 +41,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthServiceResult> LoginAsync(LoginDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user is null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+        var user = await _repository.ObterPorEmailAsync(dto.Email);
+        if (user is null || !await _repository.VerificarPasswordAsync(user, dto.Password))
             return new(401, new AuthResponseDto { IsSuccess = false, Message = "Credenciais inválidas." });
 
         var token = await _tokenService.GenerateJwtTokenAsync(user);
@@ -62,17 +59,17 @@ public class AuthService : IAuthService
     {
         var user = await ObterUtilizadorDoPedidoAsync();
         if (user is null) return new(401);
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await _repository.ObterRolesAsync(user);
         return new(200, new CurrentUserDto { FirstName = user.name ?? string.Empty, Role = roles.FirstOrDefault() ?? string.Empty });
     }
 
     public async Task<AuthServiceResult> ObterClientesAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
+        var users = await _repository.ObterTodosAsync();
         var lista = new List<UserListItemDto>();
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await _repository.ObterRolesAsync(user);
             if (roles.Contains("Cliente", StringComparer.OrdinalIgnoreCase)) lista.Add(MapearUtilizador(user, roles.FirstOrDefault() ?? "Cliente"));
         }
         return new(200, lista);
@@ -87,7 +84,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthServiceResult> ObterAdminsAsync()
     {
-        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+        var admins = await _repository.ObterPorRoleAsync("Admin");
         var resposta = admins.OrderBy(admin => admin.name).ThenBy(admin => admin.Email)
             .Select(admin => MapearUtilizador(admin, "Admin")).ToList();
         return new(200, resposta);
@@ -96,17 +93,17 @@ public class AuthService : IAuthService
     public async Task<AuthServiceResult> CriarAdminAsync(CriarAdminDto dto)
     {
         var email = dto.Email.Trim();
-        if (await _userManager.FindByEmailAsync(email) is not null)
+        if (await _repository.ObterPorEmailAsync(email) is not null)
             return new(400, new { message = "Já existe uma conta com este e-mail." });
 
         var admin = CriarModeloUtilizador(email, dto.FirstName);
-        var createResult = await _userManager.CreateAsync(admin, dto.Password);
+        var createResult = await _repository.CriarAsync(admin, dto.Password);
         if (!createResult.Succeeded) return Falha(createResult.Errors);
 
         var roleResult = await GarantirEAdicionarRoleAsync(admin, "Admin");
         if (!roleResult.Succeeded)
         {
-            await _userManager.DeleteAsync(admin);
+            await _repository.ApagarAsync(admin);
             return Falha(roleResult.Errors);
         }
         return new(200, MapearUtilizador(admin, "Admin"));
@@ -114,8 +111,8 @@ public class AuthService : IAuthService
 
     public async Task<AuthServiceResult> AtualizarAdminAsync(string id, AtualizarAdminDto dto)
     {
-        var admin = await _userManager.FindByIdAsync(id);
-        if (admin is null || !await _userManager.IsInRoleAsync(admin, "Admin"))
+        var admin = await _repository.ObterPorIdAsync(id);
+        if (admin is null || !await _repository.TemRoleAsync(admin, "Admin"))
             return new(404, new { message = "Administrador não encontrado." });
         return await AtualizarDadosUtilizadorAsync(admin, dto, "Admin");
     }
@@ -125,30 +122,30 @@ public class AuthService : IAuthService
         var atual = await ObterUtilizadorDoPedidoAsync();
         if (atual?.Id == id) return new(400, new { message = "Não podes eliminar a tua própria conta." });
 
-        var admin = await _userManager.FindByIdAsync(id);
-        if (admin is null || !await _userManager.IsInRoleAsync(admin, "Admin"))
+        var admin = await _repository.ObterPorIdAsync(id);
+        if (admin is null || !await _repository.TemRoleAsync(admin, "Admin"))
             return new(404, new { message = "Administrador não encontrado." });
 
-        if ((await _userManager.GetUsersInRoleAsync("Admin")).Count <= 1)
+        if ((await _repository.ObterPorRoleAsync("Admin")).Count <= 1)
             return new(400, new { message = "Não é possível eliminar o último administrador." });
 
-        var result = await _userManager.DeleteAsync(admin);
+        var result = await _repository.ApagarAsync(admin);
         return result.Succeeded ? new(204) : Falha(result.Errors);
     }
 
     public async Task<AuthServiceResult> AtualizarUtilizadorAsync(string id, AtualizarAdminDto dto)
     {
-        var user = await _userManager.FindByIdAsync(id);
+        var user = await _repository.ObterPorIdAsync(id);
         if (user is null) return new(404, new { message = "Utilizador não encontrado." });
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await _repository.ObterRolesAsync(user);
         return await AtualizarDadosUtilizadorAsync(user, dto, roles.FirstOrDefault() ?? "Cliente");
     }
 
     public async Task<AuthServiceResult> ApagarUtilizadorAsync(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
+        var user = await _repository.ObterPorIdAsync(id);
         if (user is null) return new(404, new { message = "Utilizador não encontrado." });
-        var result = await _userManager.DeleteAsync(user);
+        var result = await _repository.ApagarAsync(user);
         return result.Succeeded ? new(204) : Falha(result.Errors);
     }
 
@@ -162,15 +159,15 @@ public class AuthService : IAuthService
     private async Task<AuthServiceResult> CriarUtilizadorComRoleAsync(RegisterDto dto, string role, string erroEmail, string? mensagemSucesso)
     {
         var email = dto.Email.Trim();
-        if (await _userManager.FindByEmailAsync(email) is not null) return new(400, new { message = erroEmail });
+        if (await _repository.ObterPorEmailAsync(email) is not null) return new(400, new { message = erroEmail });
         var user = CriarModeloUtilizador(email, dto.FirstName);
-        var result = await _userManager.CreateAsync(user, dto.Password);
+        var result = await _repository.CriarAsync(user, dto.Password);
         if (!result.Succeeded) return Falha(result.Errors);
 
         var roleResult = await GarantirEAdicionarRoleAsync(user, role);
         if (!roleResult.Succeeded)
         {
-            await _userManager.DeleteAsync(user);
+            await _repository.ApagarAsync(user);
             return Falha(roleResult.Errors);
         }
 
@@ -181,19 +178,19 @@ public class AuthService : IAuthService
     private async Task<AuthServiceResult> AtualizarDadosUtilizadorAsync(ApplicationUser user, AtualizarAdminDto dto, string role)
     {
         var email = dto.Email.Trim();
-        var comMesmoEmail = await _userManager.FindByEmailAsync(email);
+        var comMesmoEmail = await _repository.ObterPorEmailAsync(email);
         if (comMesmoEmail is not null && comMesmoEmail.Id != user.Id) return new(400, new { message = "Já existe uma conta com este e-mail." });
 
         user.name = dto.FirstName.Trim();
         user.Email = email;
         user.UserName = email;
-        var updateResult = await _userManager.UpdateAsync(user);
+        var updateResult = await _repository.AtualizarAsync(user);
         if (!updateResult.Succeeded) return Falha(updateResult.Errors);
 
         if (!string.IsNullOrWhiteSpace(dto.Password))
         {
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var passwordResult = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+            var token = await _repository.GerarTokenReposicaoPasswordAsync(user);
+            var passwordResult = await _repository.ReporPasswordAsync(user, token, dto.Password);
             if (!passwordResult.Succeeded) return Falha(passwordResult.Errors);
         }
         return new(200, MapearUtilizador(user, role));
@@ -201,18 +198,18 @@ public class AuthService : IAuthService
 
     private async Task<IdentityResult> GarantirEAdicionarRoleAsync(ApplicationUser user, string role)
     {
-        if (!await _roleManager.RoleExistsAsync(role))
+        if (!await _repository.RoleExisteAsync(role))
         {
-            var criarRole = await _roleManager.CreateAsync(new IdentityRole(role));
+            var criarRole = await _repository.CriarRoleAsync(role);
             if (!criarRole.Succeeded) return criarRole;
         }
-        return await _userManager.AddToRoleAsync(user, role);
+        return await _repository.AdicionarRoleAsync(user, role);
     }
 
     private Task<ApplicationUser?> ObterUtilizadorDoPedidoAsync()
         => _httpContextAccessor.HttpContext is null
             ? Task.FromResult<ApplicationUser?>(null)
-            : _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            : _repository.ObterUtilizadorAtualAsync(_httpContextAccessor.HttpContext.User);
 
     private static ApplicationUser CriarModeloUtilizador(string email, string nome) => new()
     {
